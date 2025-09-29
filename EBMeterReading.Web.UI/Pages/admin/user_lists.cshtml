@@ -1,0 +1,632 @@
+﻿@page
+@model EBMeterReading.Web.UI.Pages.admin.user_listsModel
+@{
+    ViewData["Title"] = "User List";
+}
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-8">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="text-body-highlight mb-1">Pending validations</h5>
+                    <p class="text-body-secondary mb-0">Review new meter readings awaiting approval.</p>
+                </div>
+                <div class="display-5 fw-semibold text-warning mb-0" id="pending-validations">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="text-body-highlight mb-1">Automation health</h5>
+                <p class="text-body-secondary mb-2">AI predictions processed in the last 24h.</p>
+                <div class="d-flex align-items-end justify-content-between">
+                    <div class="display-6 fw-semibold text-success mb-0" id="automation-health">0%</div>
+                    <span class="badge badge-phoenix badge-phoenix-success fs-10"><span class="badge-label">Stable</span><span class="ms-1" data-feather="trending-up" style="height:12.8px;width:12.8px;"></span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-5">
+    <div class="card-header border-bottom">
+        <div class="row align-items-center justify-content-between g-3">
+            <div class="col">
+                <h4 class="mb-0">Customer Disputes</h4>
+                <p class="text-body-secondary mb-0">Track and manage customer dispute submissions.</p>
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm"><span class="fas fa-arrow-down me-1"></span>Export CSV</button>
+                <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-bulk-analysis-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Bulk Analysis"><span class="fas fa-robot"></span></button>
+            </div>
+        </div>
+        <div class="row g-3 mt-3">
+            <div class="col-12 col-md-4">
+                <div class="search-box" data-list='{"valueNames":["customer","bill","status","prediction"],"page":8,"pagination":true}'>
+                    <form class="position-relative" data-bs-toggle="search" data-bs-display="static">
+                        <input class="form-control search-input fuzzy-search" type="search" placeholder="Search by customer, bill ID, description or issue type" aria-label="Search" />
+                        <span class="fas fa-search search-box-icon"></span>
+                    </form>
+                </div>
+            </div>
+            <div class="col-12 col-md-auto ms-md-auto">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="filter-status"><span class="fas fa-filter me-2"></span>Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="ebUserTable" class="border-top border-bottom border-translucent" data-list='{"valueNames":["distributor","customer","bill","status","prediction"],"page":8,"pagination":true}'>
+        <div class="table-responsive scrollbar">
+            <table class="table fs-9 mb-0">
+                <thead>
+                    <tr class="text-body-tertiary">
+                        <th class="sort align-middle ps-3" scope="col" data-sort="customer" style="width:15%;">Customer Name</th>
+                        <th class="sort align-middle" scope="col" data-sort="bill" style="width:12%;">Bill ID</th>
+                        <th class="align-middle" scope="col" style="width:12%;">Evidence Photo</th>
+                        <th class="align-middle" scope="col" style="width:25%;">Description</th>
+                        <th class="sort align-middle" scope="col" data-sort="status" style="width:10%;">Status</th>
+                        <th class="sort align-middle" scope="col" data-sort="prediction" style="width:12%;">AI Prediction</th>
+                        <th class="align-middle text-end pe-3" scope="col" style="width:8%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="list" id="eb-user-table-body">
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-body-tertiary">Loading submissions…</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="row align-items-center justify-content-between py-2 px-3 fs-9">
+            <div class="col-auto d-flex">
+                <p class="mb-0 d-none d-sm-block me-3 fw-semibold text-body" id="pagination-info">Loading...</p>
+                <button class="btn btn-link fw-semibold p-0" id="view-all-btn" style="display: none;">View all<span class="fas fa-angle-right ms-1" data-fa-transform="down-1"></span></button>
+                <button class="btn btn-link fw-semibold p-0" id="view-less-btn" style="display: none;">View Less<span class="fas fa-angle-right ms-1" data-fa-transform="down-1"></span></button>
+            </div>
+            <div class="col-auto d-flex">
+                <button class="btn btn-outline-secondary btn-sm me-1" id="prev-page-btn">
+                    <span class="fas fa-chevron-left"></span>
+                </button>
+                <div class="d-flex align-items-center">
+                    <span class="text-body-secondary me-2">Page</span>
+                    <select class="form-select form-select-sm" id="page-select" style="width: auto;">
+                        <option value="1">1</option>
+                    </select>
+                    <span class="text-body-secondary ms-2" id="total-pages">of 1</span>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm ms-1" id="next-page-btn">
+                    <span class="fas fa-chevron-right"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Chat Off-canvas -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="aiChatOffcanvas" aria-labelledby="aiChatOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center">
+            <div class="avatar avatar-m me-2">
+                <div class="avatar-name rounded-circle bg-info text-white">
+                    <span class="fas fa-robot"></span>
+                </div>
+            </div>
+            <div>
+                <h5 class="offcanvas-title mb-0" id="aiChatOffcanvasLabel">AI Assistant</h5>
+                <small class="text-body-secondary">Bulk Submission Analysis</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0 d-flex flex-column">
+        <!-- Chat messages area -->
+        <div class="flex-1 p-3" id="ai-chat-messages" style="height: 400px; overflow-y: auto;">
+            <div class="d-flex mb-3">
+                <div class="avatar avatar-s me-2">
+                    <div class="avatar-name rounded-circle bg-info text-white fs-10">
+                        <span class="fas fa-robot"></span>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-body-secondary rounded-3 p-3">
+                        <p class="mb-0">Hello! I can help you analyze multiple submissions, identify patterns, flag unusual readings, and provide bulk processing insights. What would you like to analyze?</p>
+                    </div>
+                    <small class="text-body-tertiary">Just now</small>
+                </div>
+            </div>
+        </div>
+        <!-- Chat input area -->
+        <div class="border-top p-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="ai-chat-input" placeholder="Ask about submission patterns..." />
+                <button class="btn btn-primary" type="button" id="ai-send-btn">
+                    <span class="fas fa-paper-plane"></span>
+                </button>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-1">Find anomalies</button>
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-2">Analyze patterns</button>
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-3">Bulk approve</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Global variables
+        var currentPage = 1;
+        var itemsPerPage = 8;
+        var totalItems = 0;
+        var totalPages = 0;
+        var currentFilter = 'All';
+        var searchQuery = '';
+        var guserData = null;
+        var gdashboardSummary = null;
+        var searchTable = null;
+        var filteredData = [];
+
+        $(document).ready(function () {
+            loadAllData();
+            setupEventHandlers();
+        });
+
+        async function loadAllData() {
+            try {
+                await loadDashboardSummary();
+                await loadUserList();
+            } catch (error) {
+                console.error("Error loading data:", error);
+                showToast("Failed to load data. Please try again.");
+            }
+        }
+
+        // Function to load dashboard summary data
+        async function loadDashboardSummary() {
+            $.ajax({
+                url: "http://127.0.0.1:8000/api/admin/dashboard-summary",
+                type: "GET",
+                contentType: "application/json",
+                dataType: "json",
+                success: function (data) {
+                    if (data && data.response) {
+                        gdashboardSummary = data.response;
+                        populateDashboardSummary(gdashboardSummary);
+                    } else {
+                        console.error("Unexpected API response:", data);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    // Fallback to sample data for demo
+                    loadSampleDashboardData();
+                }
+            });
+        }
+
+        // Function to load disputes list data
+        async function loadUserList() {
+            $.ajax({
+                url: "http://127.0.0.1:8000/disputes/get_all_disputes",
+                type: "GET",
+                contentType: "application/json",
+                dataType: "json",
+                success: function (data) {
+                    if (data && data.disputes) {
+                        guserData = data.disputes;
+                        applyFiltersAndPagination();
+                    } else {
+                        console.error("Unexpected API response:", data);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    // Fallback to sample data for demo
+                    loadSampleUserData();
+                }
+            });
+        }
+
+        // Function to populate dashboard summary
+        function populateDashboardSummary(summary) {
+            $('#pending-validations').text(summary.pendingValidations || 0);
+            $('#automation-health').text((summary.automationHealth?.percentage || 0) + '%');
+        }
+
+        // Function to apply filters and pagination
+        function applyFiltersAndPagination() {
+            if (!guserData) return;
+
+            // Apply status filter
+            filteredData = guserData;
+            if (currentFilter !== 'All') {
+                filteredData = guserData.filter(user => 
+                    user.status.toLowerCase() === currentFilter.toLowerCase()
+                );
+            }
+
+            // Apply search filter
+            if (searchQuery && searchQuery.trim() !== '') {
+                const query = searchQuery.toLowerCase();
+                filteredData = filteredData.filter(dispute => 
+                    dispute.customer_name.toLowerCase().includes(query) ||
+                    dispute.bill_id.toLowerCase().includes(query) ||
+                    dispute.description.toLowerCase().includes(query) ||
+                    dispute.issue_type.toLowerCase().includes(query)
+                );
+            }
+
+            // Calculate pagination
+            totalItems = filteredData.length;
+            totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            // Reset to page 1 if current page is beyond total pages
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = 1;
+            }
+
+            // Get current page data
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentPageData = filteredData.slice(startIndex, endIndex);
+
+            populateUserList(currentPageData);
+            updatePaginationControls();
+        }
+
+        // Function to populate user list
+        function populateUserList(users) {
+            const tableBody = $('#eb-user-table-body');
+            tableBody.empty();
+            
+            if (!users || users.length === 0) {
+                tableBody.append(`
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-body-tertiary">No submissions found</td>
+                    </tr>
+                `);
+                return;
+            }
+
+            // Add users to the table body
+            users.forEach(user => {
+                tableBody.append(createUserTableRow(user));
+            });
+
+            // Refresh icons
+            feather.replace();
+        }
+
+        // Function to update pagination controls
+        function updatePaginationControls() {
+            // Update pagination info
+            const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            $('#pagination-info').text(`Showing ${startItem}-${endItem} of ${totalItems} entries`);
+
+            // Update page selector
+            const pageSelect = $('#page-select');
+            pageSelect.empty();
+            for (let i = 1; i <= totalPages; i++) {
+                pageSelect.append(`<option value="${i}" ${i === currentPage ? 'selected' : ''}>${i}</option>`);
+            }
+            $('#total-pages').text(`of ${totalPages}`);
+
+            // Update button states
+            $('#prev-page-btn').prop('disabled', currentPage === 1);
+            $('#next-page-btn').prop('disabled', currentPage === totalPages || totalPages === 0);
+
+            // Show/hide view all/less buttons
+            if (totalPages > 1) {
+                $('#view-all-btn').show();
+                $('#view-less-btn').hide();
+            } else {
+                $('#view-all-btn').hide();
+                $('#view-less-btn').hide();
+            }
+        }
+
+        // Function to create status badge
+        function createStatusBadge(status) {
+                const statusMap = {
+                    'pending': { class: 'badge-phoenix-warning', icon: 'clock' },
+                    'approved': { class: 'badge-phoenix-success', icon: 'check' },
+                    'rejected': { class: 'badge-phoenix-danger', icon: 'x' },
+                    'in progress': { class: 'badge-phoenix-info', icon: 'loader' }
+                };
+
+                const statusKey = status.toLowerCase();
+                const config = statusMap[statusKey] || { class: 'badge-phoenix-secondary', icon: 'info' };
+
+                return `<span class="badge badge-phoenix fs-10 ${config.class}">
+                    <span class="badge-label">${status}</span>
+                    <span class="ms-1" data-feather="${config.icon}" style="height:12.8px;width:12.8px;"></span>
+                </span>`;
+        }
+
+        // Function to fix image path
+        function fixImagePath(path) {
+            return (path || '').replace('~/', '');
+        }
+
+        // Function to create dispute table row
+        function createUserTableRow(dispute) {
+            // Construct image source with base64 string
+            let imgSrc = "data:image/jpeg;base64," + dispute.evidence_photo;
+            
+            return `
+                <tr data-dispute-id="${dispute.dispute_id}">
+                    <td class="customer ps-3 fw-semibold text-body-highlight">${dispute.customer_name}</td>
+                    <td class="bill text-body-secondary">${dispute.bill_id}</td>
+                    <td>
+                        <span class="border border-translucent rounded-2 d-inline-flex">
+                            <img src="${imgSrc}" alt="Evidence" width="48" height="48" class="rounded-2" />
+                        </span>
+                    </td>
+                    <td class="text-body-secondary">${dispute.description}</td>
+                    <td class="status">${createStatusBadge(dispute.status)}</td>
+                    <td class="prediction fw-semibold text-body-highlight">${dispute.ai_reading || '—'}</td>
+                        <td class="text-end pe-3">
+                        <a class="btn btn-primary btn-sm" href="/admin/user_details?customerid=${dispute.customer_id}">View</a>
+                     </td>
+                </tr>
+            `;
+        }
+
+        // Function to setup event handlers
+        function setupEventHandlers() {
+            // Handle filter button
+            $('#filter-status').click(function() {
+                showFilterMenu();
+            });
+
+            // Prevent page scroll on pagination links and buttons
+            $(document).on('click', '[data-list-view], [data-list-pagination], .page-link', function(e) {
+                e.preventDefault();
+                return false;
+            });
+
+            // Handle filter selection
+            $(document).on('click', '#status-filter-menu .dropdown-item', function() {
+                const selectedStatus = $(this).data('status');
+                currentFilter = selectedStatus;
+                currentPage = 1; // Reset to first page on filter change
+                applyFiltersAndPagination();
+                $('#status-filter-menu').remove();
+            });
+
+            // Close filter menu when clicking outside
+            $(document).click(function(event) {
+                if (!$(event.target).closest('#filter-status, #status-filter-menu').length) {
+                    $('#status-filter-menu').remove();
+                }
+            });
+
+            // Handle search input
+            $('.search-input').on('input', function() {
+                searchQuery = $(this).val();
+                currentPage = 1; // Reset to first page on search
+                // Debounce search
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    applyFiltersAndPagination();
+                }, 500);
+            });
+
+            // AI Chat event handlers
+            $('#ai-send-btn').click(function() {
+                const message = $('#ai-chat-input').val().trim();
+                if (message) {
+                    addAIMessage(message, true);
+                    $('#ai-chat-input').val('');
+                    simulateAIResponse(message);
+                }
+            });
+
+            $('#ai-chat-input').keypress(function(e) {
+                if (e.which === 13) {
+                    $('#ai-send-btn').click();
+                }
+            });
+
+            // Suggested questions
+            $('#ai-suggest-1').click(function() {
+                addAIMessage('Find any anomalies in current submissions', true);
+                simulateAIResponse('anomaly detection');
+            });
+
+            $('#ai-suggest-2').click(function() {
+                addAIMessage('What patterns do you see in submission quality?', true);
+                simulateAIResponse('pattern analysis');
+            });
+
+            $('#ai-suggest-3').click(function() {
+                addAIMessage('Which submissions can be bulk approved?', true);
+                simulateAIResponse('bulk approval suggestions');
+            });
+
+            // Custom pagination handlers
+            $('#prev-page-btn').click(function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    applyFiltersAndPagination();
+                }
+            });
+
+            $('#next-page-btn').click(function() {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    applyFiltersAndPagination();
+                }
+            });
+
+            $('#page-select').change(function() {
+                currentPage = parseInt($(this).val());
+                applyFiltersAndPagination();
+            });
+
+            // View all/less functionality
+            $('#view-all-btn').click(function() {
+                itemsPerPage = totalItems; // Show all items
+                currentPage = 1;
+                applyFiltersAndPagination();
+                $(this).hide();
+                $('#view-less-btn').show();
+            });
+
+            $('#view-less-btn').click(function() {
+                itemsPerPage = 8; // Back to default
+                currentPage = 1;
+                applyFiltersAndPagination();
+                $(this).hide();
+                $('#view-all-btn').show();
+            });
+        }
+
+        // Function to show filter menu
+        function showFilterMenu() {
+            const filterOptions = ['All', 'Pending', 'Approved', 'Rejected', 'In progress'];
+            const menu = $('<div class="dropdown-menu show" id="status-filter-menu"></div>');
+            
+            filterOptions.forEach(option => {
+                menu.append(`<button type="button" class="dropdown-item" data-status="${option}">${option}</button>`);
+            });
+            
+            const buttonPosition = $('#filter-status').offset();
+            menu.css({
+                position: 'absolute',
+                top: buttonPosition.top + 40,
+                left: buttonPosition.left
+            });
+            
+            $('body').append(menu);
+        }
+
+        // Function to add AI message
+            function addAIMessage(message, isUser = false) {
+                const chatMessages = $('#ai-chat-messages');
+                const messageClass = isUser ? 'bg-primary text-white ms-auto' : 'bg-body-secondary';
+                const avatarClass = isUser ? 'bg-primary' : 'bg-info';
+                const avatarIcon = isUser ? 'fa-user' : 'fa-robot';
+                
+                const messageHtml = `
+                    <div class="d-flex mb-3 ${isUser ? 'justify-content-end' : ''}">
+                        ${!isUser ? `
+                            <div class="avatar avatar-s me-2">
+                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
+                                    <span class="fas ${avatarIcon}"></span>
+                                </div>
+                            </div>
+                        ` : ''}
+                        <div class="flex-1" style="max-width: 85%;">
+                            <div class="${messageClass} rounded-3 p-3">
+                                <p class="mb-0">${message}</p>
+                            </div>
+                            <small class="text-body-tertiary">Just now</small>
+                        </div>
+                        ${isUser ? `
+                            <div class="avatar avatar-s ms-2">
+                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
+                                    <span class="fas ${avatarIcon}"></span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                chatMessages.append(messageHtml);
+                chatMessages.scrollTop(chatMessages[0].scrollHeight);
+            }
+
+        // Function to simulate AI response
+            function simulateAIResponse(userMessage) {
+                const responses = [
+                    "I've analyzed your submissions and found 2 potential anomalies: Bill EB-2024-1109 has unusually low confidence (64%), and EB-2024-1034 shows a significant variance from predicted values.",
+                    "Pattern analysis reveals that North Hub submissions have a 95% approval rate, while South Line has more manual reviews needed. Consider additional training for South Line technicians.",
+                    "Based on submission patterns, I recommend bulk approving the 3 pending submissions from North Hub - they all show high confidence (93%+) and follow expected consumption patterns.",
+                    "I notice Joyson Mathew and Priya Shenoy have consistent high-quality submissions. Consider featuring them as success cases for other customers.",
+                    "Bulk analysis complete: 5 submissions total, 2 pending, 1 rejected, 1 in progress, 1 approved. The rejected submission needs image resubmission due to poor lighting."
+                ];
+                
+                setTimeout(() => {
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    addAIMessage(randomResponse);
+                }, 1000);
+            }
+
+        // Function to show toast notification
+        function showToast(message) {
+            // Remove any existing toast
+            $('#global-toast-container').empty();
+
+            // Determine color based on message content
+            let bgClass = "text-bg-danger"; // default red
+            if (typeof message === "string" && message.toLowerCase().includes("successfully")) {
+                bgClass = "text-bg-success"; // green for success
+            }
+
+            // Toast HTML (message only)
+            const toastHtml = `
+                <div class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="3000">
+                    <div class="toast-body d-flex justify-content-between align-items-center">
+                        <span>${message}</span>
+                        <button type="button" class="btn ms-2 p-0" data-bs-dismiss="toast" aria-label="Close">
+                            <span class="uil uil-times fs-7"></span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Append and show
+            $('#global-toast-container').append(toastHtml);
+            $('#global-toast-container .toast').toast({ delay: 4000 }).toast('show');
+        }
+
+        // Fallback functions for demo data when API is not available
+        function loadSampleDashboardData() {
+            const sampleSummary = {
+                pendingValidations: 2,
+                automationHealth: { percentage: 95 }
+            };
+            populateDashboardSummary(sampleSummary);
+        }
+
+        function loadSampleUserData() {
+            const sampleDisputes = [
+                {
+                    dispute_id: "DSP-2025-0001",
+                    bill_id: "542246503720",
+                    customer_id: "Amara Singh",
+                    issue_type: "high_bill",
+                    description: "The bill amount is unusually high compared to previous months.",
+                    evidence_photo: "/9j/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wgARCAQAA/8DASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAQFAgMGAQcI/8QAGgEBAQEBAQEBAAAAAAAAAAAAAAECAwQFBv/aAAwDAQACEAMQAAAB+/CwAAAAAAAXhcvvbEo8k7+HYXGwF0BXdLK4xMG7gmt5PZ7jGL+EKnVHKXVWFwD2uG9Cmx5p0RcvGZ4KnQdWNalWBjFm0hPL6z6dEWY2mbnjKr06j+c5p0CpvCcaLDTpscAXuzPkfhRP5VcikW1FR+jWEANPEB9f7YugA3hTb2vL7xIDxEYD0sN4GgmMZp54MRsNQgqPtJjqge0C/gMOAK6FR+EwQBXSFX5C5O1HkhfyOEQItAV/WsGaDQRQ7/9Y6Jk3OX5Axjtw0lVeh1i4URarruiH85dUIeJs96wYVEASn8mORWaaon+spETCIT/AJyEBRAFI0VMnKJrN8mW6hXkf5v+NFwPRfrCqr1DH1R8enByQIDhcERVab",
+                    status: "open",
+                    ai_suggestion: "Review meter reading accuracy"
+                },
+                {
+                    dispute_id: "DSP-2025-0002",
+                    bill_id: "EB-2024-1162",
+                    customer_id: "Joyson Mathew",
+                    issue_type: "wrong_meter_reading",
+                    description: "The meter reading does not match the actual consumption.",
+                    evidence_photo: "/9j/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wgARCAQAA/8DASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAQFAgMGAQcI/8QAGgEBAQEBAQEBAAAAAAAAAAAAAAECAwQFBv/aAAwDAQACEAMQAAAB+/CwAAAAAAAXhcvvbEo8k7+HYXGwF0BXdLK4xMG7gmt5PZ7jGL+EKnVHKXVWFwD2uG9Cmx5p0RcvGZ4KnQdWNalWBjFm0hPL6z6dEWY2mbnjKr06j+c5p0CpvCcaLDTpscAXuzPkfhRP5VcikW1FR+jWEANPEB9f7YugA3hTb2vL7xIDxEYD0sN4GgmMZp54MRsNQgqPtJjqge0C/gMOAK6FR+EwQBXSFX5C5O1HkhfyOEQItAV/WsGaDQRQ7/9Y6Jk3OX5Axjtw0lVeh1i4URarruiH85dUIeJs96wYVEASn8mORWaaon+spETCIT/AJyEBRAFI0VMnKJrN8mW6hXkf5v+NFwPRfrCqr1DH1R8enByQIDhcERVab",
+                    status: "in_progress",
+                    ai_suggestion: "Verify meter calibration"
+                },
+                {
+                    dispute_id: "DSP-2025-0003",
+                    bill_id: "EB-2024-1109",
+                    customer_id: "Karin Becker",
+                    issue_type: "payment_issue",
+                    description: "Payment was made on time but late fee was still applied.",
+                    evidence_photo: "/9j/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wgARCAQAA/8DASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAQFAgMGAQcI/8QAGgEBAQEBAQEBAAAAAAAAAAAAAAECAwQFBv/aAAwDAQACEAMQAAAB+/CwAAAAAAAXhcvvbEo8k7+HYXGwF0BXdLK4xMG7gmt5PZ7jGL+EKnVHKXVWFwD2uG9Cmx5p0RcvGZ4KnQdWNalWBjFm0hPL6z6dEWY2mbnjKr06j+c5p0CpvCcaLDTpscAXuzPkfhRP5VcikW1FR+jWEANPEB9f7YugA3hTb2vL7xIDxEYD0sN4GgmMZp54MRsNQgqPtJjqge0C/gMOAK6FR+EwQBXSFX5C5O1HkhfyOEQItAV/WsGaDQRQ7/9Y6Jk3OX5Axjtw0lVeh1i4URarruiH85dUIeJs96wYVEASn8mORWaaon+spETCIT/AJyEBRAFI0VMnKJrN8mW6hXkf5v+NFwPRfrCqr1DH1R8enByQIDhcERVab",
+                    status: "resolved",
+                    ai_suggestion: "Refund late fee"
+                }
+            ];
+            guserData = sampleDisputes;
+            applyFiltersAndPagination();
+        }
+    </script>

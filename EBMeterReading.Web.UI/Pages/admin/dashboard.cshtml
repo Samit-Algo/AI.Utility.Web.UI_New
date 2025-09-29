@@ -1,0 +1,802 @@
+﻿@page
+@model EBMeterReading.Web.UI.Pages.admin.dashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<!-- Summary Cards Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1 text-body-secondary">Total Submissions</h6>
+                        <h2 class="text-body-emphasis mb-0" id="total-submissions">0</h2>
+                        <p class="fs-9 text-success mb-0">
+                            <span class="me-1" data-feather="trending-up" style="height:12.8px;width:12.8px;"></span>
+                            +12% this month
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="fa-stack" style="min-height: 46px;min-width: 46px;">
+                            <span class="fa-solid fa-square fa-stack-2x text-success-300" data-fa-transform="down-4 rotate--10 left-4"></span>
+                            <span class="fa-solid fa-circle fa-stack-2x stack-circle text-stats-circle-success" data-fa-transform="up-4 right-3 grow-2"></span>
+                            <span class="fa-stack-1x fa-solid fa-file-alt text-success " data-fa-transform="shrink-2 up-8 right-6"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1 text-body-secondary">Pending Reviews</h6>
+                        <h2 class="text-body-emphasis mb-0" id="pending-reviews">0</h2>
+                        <p class="fs-9 text-warning mb-0">
+                            <span class="me-1" data-feather="alert-circle" style="height:12.8px;width:12.8px;"></span>
+                            Needs attention
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="fa-stack" style="min-height: 46px;min-width: 46px;">
+                            <span class="fa-solid fa-square fa-stack-2x text-warning-300" data-fa-transform="down-4 rotate--10 left-4"></span>
+                            <span class="fa-solid fa-circle fa-stack-2x stack-circle text-stats-circle-warning" data-fa-transform="up-4 right-3 grow-2"></span>
+                            <span class="fa-stack-1x fa-solid fa-clock text-warning " data-fa-transform="shrink-2 up-8 right-6"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1 text-body-secondary">AI Accuracy</h6>
+                        <h2 class="text-body-emphasis mb-0" id="ai-accuracy">0%</h2>
+                        <p class="fs-9 text-success mb-0">
+                            <span class="me-1" data-feather="trending-up" style="height:12.8px;width:12.8px;"></span>
+                            +3% improvement
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="fa-stack" style="min-height: 46px;min-width: 46px;">
+                            <span class="fa-solid fa-square fa-stack-2x text-info-300" data-fa-transform="down-4 rotate--10 left-4"></span>
+                            <span class="fa-solid fa-circle fa-stack-2x stack-circle text-stats-circle-info" data-fa-transform="up-4 right-3 grow-2"></span>
+                            <span class="fa-stack-1x fa-solid fa-brain text-info " data-fa-transform="shrink-2 up-8 right-6"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1 text-body-secondary">Active Distributors</h6>
+                        <h2 class="text-body-emphasis mb-0" id="active-distributors">0</h2>
+                        <p class="fs-9 text-primary mb-0">
+                            <span class="me-1" data-feather="users" style="height:12.8px;width:12.8px;"></span>
+                            Across regions
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="fa-stack" style="min-height: 46px;min-width: 46px;">
+                            <span class="fa-solid fa-square fa-stack-2x text-primary-300" data-fa-transform="down-4 rotate--10 left-4"></span>
+                            <span class="fa-solid fa-circle fa-stack-2x stack-circle text-stats-circle-primary" data-fa-transform="up-4 right-3 grow-2"></span>
+                            <span class="fa-stack-1x fa-solid fa-building text-primary " data-fa-transform="shrink-2 up-8 right-6"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-xxl-8">
+        <div class="card h-100">
+            <div class="card-header border-bottom">
+                <div class="row align-items-center g-3">
+                    <div class="col">
+                        <h4 class="mb-0">Monthly Submissions</h4>
+                        <p class="text-body-secondary mb-0">Meter reading submissions over time</p>
+                    </div>
+                    <div class="col-auto">
+                        <select class="form-select form-select-sm" id="chart-period">
+                            <option value="6months">Last 6 months</option>
+                            <option value="year" selected>Last year</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="submissions-chart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-xxl-4">
+        <div class="card h-100">
+            <div class="card-header border-bottom">
+                <h4 class="mb-0">Status Distribution</h4>
+                <p class="text-body-secondary mb-0">Current submission status breakdown</p>
+            </div>
+            <div class="card-body d-flex flex-center">
+                <canvas id="status-pie-chart" width="300" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and Top Distributors -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-7">
+        <div class="card h-100">
+            <div class="card-header border-bottom">
+                <div class="row align-items-center g-3">
+                    <div class="col">
+                        <h4 class="mb-0">Recent Activity</h4>
+                        <p class="text-body-secondary mb-0">Latest submission activities</p>
+                    </div>
+                    <div class="col-auto">
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <button class="btn btn-phoenix-primary btn-sm" id="refresh-activity">
+                                    <span class="fas fa-sync-alt me-2"></span>Refresh
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-activity-analysis-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Activity Insights">
+                                    <span class="fas fa-robot"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="recent-activity-list">
+                    <!-- Activity items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-lg-5">
+        <div class="card h-100">
+            <div class="card-header border-bottom">
+                <h4 class="mb-0">Top Distributors</h4>
+                <p class="text-body-secondary mb-0">Most active distributors this month</p>
+            </div>
+            <div class="card-body">
+                <div id="top-distributors-list">
+                    <!-- Distributor rankings will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header border-bottom">
+                <div class="row align-items-center g-3">
+                    <div class="col">
+                        <h4 class="mb-0">Performance Metrics</h4>
+                        <p class="text-body-secondary mb-0">System performance indicators</p>
+                    </div>
+                    <div class="col-auto">
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <button class="btn btn-outline-secondary btn-sm">
+                                    <span class="fas fa-download me-2"></span>Export Report
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-phoenix-primary btn-sm">
+                                    <span class="fas fa-cog me-2"></span>Settings
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-performance-analysis-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Performance Analysis">
+                                    <span class="fas fa-robot"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="performance-metrics">
+                    <!-- Performance metrics will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Chat Off-canvas -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="aiChatOffcanvas" aria-labelledby="aiChatOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center">
+            <div class="avatar avatar-m me-2">
+                <div class="avatar-name rounded-circle bg-info text-white">
+                    <span class="fas fa-robot"></span>
+                </div>
+            </div>
+            <div>
+                <h5 class="offcanvas-title mb-0" id="aiChatOffcanvasLabel">AI Assistant</h5>
+                <small class="text-body-secondary">Dashboard Analytics</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0 d-flex flex-column">
+        <!-- Chat messages area -->
+        <div class="flex-1 p-3" id="ai-chat-messages" style="height: 400px; overflow-y: auto;">
+            <div class="d-flex mb-3">
+                <div class="avatar avatar-s me-2">
+                    <div class="avatar-name rounded-circle bg-info text-white fs-10">
+                        <span class="fas fa-robot"></span>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-body-secondary rounded-3 p-3">
+                        <p class="mb-0">Hello! I can help you analyze dashboard metrics, identify trends, and provide insights about system performance. What would you like to explore?</p>
+                    </div>
+                    <small class="text-body-tertiary">Just now</small>
+                </div>
+            </div>
+        </div>
+        <!-- Chat input area -->
+        <div class="border-top p-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="ai-chat-input" placeholder="Ask about dashboard metrics..." />
+                <button class="btn btn-primary" type="button" id="ai-send-btn">
+                    <span class="fas fa-paper-plane"></span>
+                </button>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-1">Analyze trends</button>
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-2">Performance insights</button>
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-3">Predict issues</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Global variables
+        var gsummaryData = null;
+        var gsubmissionsData = null;
+        var gstatusData = null;
+        var grecentActivity = null;
+        var gtopDistributors = null;
+        var gperformanceMetrics = null;
+        var submissionsChart = null;
+        var statusChart = null;
+
+        $(document).ready(function () {
+            loadAllData();
+            setupEventHandlers();
+        });
+
+        async function loadAllData() {
+            try {
+                await loadDashboardData();
+            } catch (error) {
+                console.error("Error loading dashboard data:", error);
+                showToast("Failed to load dashboard data. Please try again.");
+            }
+        }
+
+        // Function to load dashboard data
+        async function loadDashboardData() {
+            $.ajax({
+                url: "http://127.0.0.1:8000/api/admin/dashboard-data",
+                type: "GET",
+                contentType: "application/json",
+                dataType: "json",
+                success: function (data) {
+                    if (data && data.response) {
+                        gsummaryData = data.response.summary;
+                        gsubmissionsData = data.response.submissions;
+                        gstatusData = data.response.status;
+                        grecentActivity = data.response.activity;
+                        gtopDistributors = data.response.distributors;
+                        gperformanceMetrics = data.response.performance;
+                        renderAllSections();
+                    } else {
+                        console.error("Unexpected API response:", data);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    // Fallback to sample data for demo
+                    loadSampleDashboardData();
+                }
+            });
+        }
+
+        // Fallback function for demo data when API is not available
+        function loadSampleDashboardData() {
+            gsummaryData = {
+                totalSubmissions: 1247,
+                pendingReviews: 23,
+                aiAccuracy: 94,
+                activeDistributors: 8
+            };
+
+            gsubmissionsData = {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                submitted: [85, 92, 78, 105, 98, 115, 125, 118, 132, 145, 138, 152],
+                approved: [78, 85, 72, 98, 89, 108, 119, 112, 125, 138, 131, 145],
+                rejected: [7, 7, 6, 7, 9, 7, 6, 6, 7, 7, 7, 7]
+            };
+
+            gstatusData = {
+                labels: ['Approved', 'Pending', 'In Progress', 'Rejected'],
+                data: [845, 23, 15, 14],
+                colors: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
+            };
+
+            grecentActivity = [
+                {
+                    user: 'Amara Singh',
+                    action: 'submitted new reading',
+                    billId: 'EB-2024-1187',
+                    time: '2 minutes ago',
+                    status: 'pending'
+                },
+                {
+                    user: 'Devon Carter',
+                    action: 'reading approved',
+                    billId: 'EB-2024-1034',
+                    time: '15 minutes ago',
+                    status: 'approved'
+                },
+                {
+                    user: 'Karin Becker',
+                    action: 'resubmitted reading',
+                    billId: 'EB-2024-1109',
+                    time: '32 minutes ago',
+                    status: 'pending'
+                },
+                {
+                    user: 'Joyson Mathew',
+                    action: 'reading auto-approved by AI',
+                    billId: 'EB-2024-1162',
+                    time: '1 hour ago',
+                    status: 'approved'
+                },
+                {
+                    user: 'Priya Shenoy',
+                    action: 'submitted quarterly reading',
+                    billId: 'EB-2024-0990',
+                    time: '2 hours ago',
+                    status: 'approved'
+                }
+            ];
+
+            gtopDistributors = [
+                { name: 'North Hub', submissions: 324, percentage: 26 },
+                { name: 'Central Grid', submissions: 298, percentage: 24 },
+                { name: 'East Metro', submissions: 276, percentage: 22 },
+                { name: 'South Line', submissions: 234, percentage: 19 },
+                { name: 'West Valley', submissions: 115, percentage: 9 }
+            ];
+
+            gperformanceMetrics = [
+                {
+                    title: 'Average Processing Time',
+                    value: '2.3 hours',
+                    change: '-15%',
+                    trend: 'down',
+                    color: 'success'
+                },
+                {
+                    title: 'System Uptime',
+                    value: '99.8%',
+                    change: '+0.2%',
+                    trend: 'up',
+                    color: 'success'
+                },
+                {
+                    title: 'Error Rate',
+                    value: '0.12%',
+                    change: '-0.05%',
+                    trend: 'down',
+                    color: 'success'
+                },
+                {
+                    title: 'User Satisfaction',
+                    value: '4.7/5',
+                    change: '+0.3',
+                    trend: 'up',
+                    color: 'success'
+                }
+            ];
+
+            renderAllSections();
+        }
+
+        // Function to render all dashboard sections
+        function renderAllSections() {
+            updateSummaryCards();
+            renderRecentActivity();
+            renderTopDistributors();
+            renderPerformanceMetrics();
+            
+            // Initialize charts after a small delay to ensure canvas elements are ready
+            setTimeout(() => {
+                initializeCharts();
+                feather.replace();
+            }, 100);
+        }
+
+        // Helper functions
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function createStatusBadge(status) {
+            const statusMap = {
+                'pending': { class: 'badge-phoenix-warning', text: 'Pending' },
+                'approved': { class: 'badge-phoenix-success', text: 'Approved' },
+                'rejected': { class: 'badge-phoenix-danger', text: 'Rejected' },
+                'in progress': { class: 'badge-phoenix-info', text: 'In Progress' }
+            };
+
+            const config = statusMap[status] || { class: 'badge-phoenix-secondary', text: status };
+            return `<span class="badge ${config.class} fs-10">${config.text}</span>`;
+        }
+
+        function createTrendIcon(trend, color) {
+            const iconMap = {
+                'up': 'trending-up',
+                'down': 'trending-down',
+                'stable': 'minus'
+            };
+            const icon = iconMap[trend] || 'minus';
+            return `<span class="text-${color}" data-feather="${icon}" style="height:12px;width:12px;"></span>`;
+        }
+
+        function createProgressBar(percentage, color = 'primary') {
+            return `
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-${color}" role="progressbar" 
+                         style="width: ${percentage}%" aria-valuenow="${percentage}" 
+                         aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            `;
+        }
+
+        // Chart functions
+        function createSubmissionsChart(data) {
+            const ctx = document.getElementById('submissions-chart').getContext('2d');
+            
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Submitted',
+                            data: data.submitted,
+                            borderColor: '#3366ff',
+                            backgroundColor: 'rgba(51, 102, 255, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Approved',
+                            data: data.approved,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createStatusChart(data) {
+            const ctx = document.getElementById('status-pie-chart').getContext('2d');
+            
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: data.colors,
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render functions
+        function updateSummaryCards() {
+            if (!gsummaryData) return;
+            
+            $('#total-submissions').text(formatNumber(gsummaryData.totalSubmissions));
+            $('#pending-reviews').text(gsummaryData.pendingReviews);
+            $('#ai-accuracy').text(gsummaryData.aiAccuracy + '%');
+            $('#active-distributors').text(gsummaryData.activeDistributors);
+        }
+
+        function renderRecentActivity() {
+            if (!grecentActivity) return;
+            
+            let activityHtml = '';
+            grecentActivity.forEach(activity => {
+                activityHtml += `
+                    <div class="px-3 py-2 border-bottom border-translucent">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-1">
+                                <p class="mb-1 text-body-emphasis">
+                                    <strong>${activity.user}</strong> ${activity.action}
+                                </p>
+                                <p class="mb-1 text-body-secondary fs-9">
+                                    Bill ID: ${activity.billId}
+                                </p>
+                                <small class="text-body-tertiary">${activity.time}</small>
+                            </div>
+                            <div class="ms-2">
+                                ${createStatusBadge(activity.status)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#recent-activity-list').html(activityHtml);
+        }
+
+        function renderTopDistributors() {
+            if (!gtopDistributors) return;
+            
+            let distributorsHtml = '';
+            gtopDistributors.forEach((distributor, index) => {
+                const rankColors = ['text-warning', 'text-secondary', 'text-info'];
+                const rankColor = rankColors[index] || 'text-body-secondary';
+                
+                distributorsHtml += `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="fs-6 fw-bold ${rankColor} me-3">#${index + 1}</span>
+                            <div>
+                                <h6 class="mb-0 text-body-emphasis">${distributor.name}</h6>
+                                <small class="text-body-secondary">${formatNumber(distributor.submissions)} submissions</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-body-emphasis fw-bold">${distributor.percentage}%</span>
+                            <div class="mt-1" style="width: 60px;">
+                                ${createProgressBar(distributor.percentage)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#top-distributors-list').html(distributorsHtml);
+        }
+
+        function renderPerformanceMetrics() {
+            if (!gperformanceMetrics) return;
+            
+            let metricsHtml = '';
+            gperformanceMetrics.forEach(metric => {
+                metricsHtml += `
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="border border-translucent rounded-3 p-3">
+                            <h6 class="mb-1 text-body-secondary">${metric.title}</h6>
+                            <div class="d-flex align-items-center">
+                                <h4 class="text-body-emphasis mb-0 me-2">${metric.value}</h4>
+                                <span class="text-${metric.color} fs-9">
+                                    ${createTrendIcon(metric.trend, metric.color)}
+                                    ${metric.change}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#performance-metrics').html(metricsHtml);
+        }
+
+        function initializeCharts() {
+            if (!gsubmissionsData || !gstatusData) return;
+
+            submissionsChart = createSubmissionsChart(gsubmissionsData);
+            statusChart = createStatusChart(gstatusData);
+        }
+
+        // Function to setup event handlers
+        function setupEventHandlers() {
+            // Handle refresh activity button
+            $('#refresh-activity').click(function() {
+                $(this).find('.fas').addClass('fa-spin');
+                setTimeout(() => {
+                    renderRecentActivity();
+                    $(this).find('.fas').removeClass('fa-spin');
+                }, 1000);
+            });
+
+            // Handle chart period change
+            $('#chart-period').change(function() {
+                // In real application, fetch new data based on selected period
+                console.log('Chart period changed to:', $(this).val());
+            });
+
+            // AI Chat event handlers
+            $('#ai-send-btn').click(function() {
+                const message = $('#ai-chat-input').val().trim();
+                if (message) {
+                    addAIMessage(message, true);
+                    $('#ai-chat-input').val('');
+                    simulateAIResponse(message);
+                }
+            });
+
+            $('#ai-chat-input').keypress(function(e) {
+                if (e.which === 13) {
+                    $('#ai-send-btn').click();
+                }
+            });
+
+            // Suggested questions
+            $('#ai-suggest-1').click(function() {
+                addAIMessage('What trends do you see in the data?', true);
+                simulateAIResponse('trend analysis');
+            });
+
+            $('#ai-suggest-2').click(function() {
+                addAIMessage('How is our system performance?', true);
+                simulateAIResponse('performance insights');
+            });
+
+            $('#ai-suggest-3').click(function() {
+                addAIMessage('Can you predict any potential issues?', true);
+                simulateAIResponse('issue prediction');
+            });
+        }
+
+        // Function to add AI message
+        function addAIMessage(message, isUser = false) {
+            const chatMessages = $('#ai-chat-messages');
+            const messageClass = isUser ? 'bg-primary text-white ms-auto' : 'bg-body-secondary';
+            const avatarClass = isUser ? 'bg-primary' : 'bg-info';
+            const avatarIcon = isUser ? 'fa-user' : 'fa-robot';
+            
+            const messageHtml = `
+                <div class="d-flex mb-3 ${isUser ? 'justify-content-end' : ''}">
+                    ${!isUser ? `
+                        <div class="avatar avatar-s me-2">
+                            <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
+                                <span class="fas ${avatarIcon}"></span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="flex-1" style="max-width: 85%;">
+                        <div class="${messageClass} rounded-3 p-3">
+                            <p class="mb-0">${message}</p>
+                        </div>
+                        <small class="text-body-tertiary">Just now</small>
+                    </div>
+                    ${isUser ? `
+                        <div class="avatar avatar-s ms-2">
+                            <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
+                                <span class="fas ${avatarIcon}"></span>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            chatMessages.append(messageHtml);
+            chatMessages.scrollTop(chatMessages[0].scrollHeight);
+        }
+
+        // Function to simulate AI response
+        function simulateAIResponse(userMessage) {
+            const responses = [
+                "Based on your dashboard metrics, I notice a 12% increase in submissions this month. This trend suggests improved customer engagement with the mobile app.",
+                "Your AI accuracy at 94% is excellent! The slight dip in processing time to 2.3 hours shows the system is handling the increased load efficiently.",
+                "I see 23 pending reviews - this is 15% below last month's average. The automation improvements are working well.",
+                "Performance analysis shows all systems are healthy. The 99.8% uptime is exceptional, and error rates remain minimal.",
+                "Trend analysis indicates North Hub and Central Grid are your most active distributors. Consider allocating more resources to support their growth."
+            ];
+            
+            setTimeout(() => {
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addAIMessage(randomResponse);
+            }, 1000);
+        }
+
+        // Function to show toast notification
+        function showToast(message) {
+            // Remove any existing toast
+            $('#global-toast-container').empty();
+
+            // Determine color based on message content
+            let bgClass = "text-bg-danger"; // default red
+            if (typeof message === "string" && message.toLowerCase().includes("successfully")) {
+                bgClass = "text-bg-success"; // green for success
+            }
+
+            // Toast HTML (message only)
+            const toastHtml = `
+                <div class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="3000">
+                    <div class="toast-body d-flex justify-content-between align-items-center">
+                        <span>${message}</span>
+                        <button type="button" class="btn ms-2 p-0" data-bs-dismiss="toast" aria-label="Close">
+                            <span class="uil uil-times fs-7"></span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Append and show
+            $('#global-toast-container').append(toastHtml);
+            $('#global-toast-container .toast').toast({ delay: 4000 }).toast('show');
+        }
+    </script>
+}

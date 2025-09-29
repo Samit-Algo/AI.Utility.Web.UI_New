@@ -1,0 +1,208 @@
+@page
+@model EBMeterReading.Web.UI.Pages.auth.signupModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Sign Up - EB Meter Admin";
+}
+
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link href="~/assets/css/theme.min.css" rel="stylesheet" />
+    <link href="~/assets/css/user.min.css" rel="stylesheet" />
+</head>
+<body>
+    <main class="main" id="top">
+        <div class="container-fluid bg-body-tertiary">
+            <div class="row flex-center position-relative min-vh-100 g-0 py-5">
+                <div class="col-11 col-sm-10 col-xl-8">
+                    <div class="card border border-translucent auth-card">
+                        <div class="card-body pe-md-0">
+                            <div class="row align-items-center gx-0">
+                                <div class="col-12 col-md-5 position-relative">
+                                    <div class="position-relative px-4 py-6">
+                                        <h3 class="mb-3 text-body-emphasis">Join EB Meter Admin</h3>
+                                        <p class="text-body-secondary">Create your administrator account to access the intelligent meter reading management system.</p>
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="d-flex align-items-center mb-2">
+                                                <span class="fas fa-shield-alt me-2 text-success"></span>
+                                                <span class="fw-semibold">Secure Access Control</span>
+                                            </li>
+                                            <li class="d-flex align-items-center mb-2">
+                                                <span class="fas fa-users me-2 text-success"></span>
+                                                <span class="fw-semibold">Team Management</span>
+                                            </li>
+                                            <li class="d-flex align-items-center">
+                                                <span class="fas fa-chart-line me-2 text-success"></span>
+                                                <span class="fw-semibold">Advanced Analytics</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-7">
+                                    <div class="p-4 p-md-6">
+                                        <div class="text-center mb-6">
+                                            <div class="d-flex align-items-center justify-content-center mb-4">
+                                                <img src="~/assets/img/icons/logo.png" alt="EB" width="40" />
+                                                <h4 class="ms-2 mb-0 text-body-emphasis">EB Meter Admin</h4>
+                                            </div>
+                                            <h3 class="text-body-highlight">Create Account</h3>
+                                            <p class="text-body-tertiary mb-0">Get started with your admin account</p>
+                                        </div>
+
+                                        <form id="signupForm">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="firstName">First Name</label>
+                                                    <input class="form-control" id="firstName" type="text" placeholder="Enter first name" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="lastName">Last Name</label>
+                                                    <input class="form-control" id="lastName" type="text" placeholder="Enter last name" />
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label" for="email">Email Address</label>
+                                                <input class="form-control" id="email" type="email" placeholder="Enter email address" />
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="username">Username</label>
+                                                <input class="form-control" id="username" type="text" placeholder="Choose username" />
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="department">Department</label>
+                                                <select class="form-select" id="department">
+                                                    <option value="">Select Department</option>
+                                                    <option value="admin">Administration</option>
+                                                    <option value="operations">Operations</option>
+                                                    <option value="technical">Technical</option>
+                                                    <option value="quality">Quality Assurance</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="password">Password</label>
+                                                    <input class="form-control" id="password" type="password" placeholder="Create password" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                                                    <input class="form-control" id="confirmPassword" type="password" placeholder="Confirm password" />
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" id="termsCheck" type="checkbox" />
+                                                    <label class="form-check-label" for="termsCheck">
+                                                        I agree to the Terms of Service and Privacy Policy
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <button class="btn btn-primary w-100 mb-3" type="submit">
+                                                <span class="fas fa-user-plus me-2"></span>Create Account
+                                            </button>
+
+                                            <div class="text-center">
+                                                <span class="fs-9 fw-bold">Already have an account? </span>
+                                                <a class="link-primary fs-9 fw-bold" href="@Url.Page("/auth/login")">Sign In</a>
+                                            </div>
+                                        </form>
+
+                                        <div class="alert alert-warning mt-4">
+                                            <strong>Demo Mode:</strong> Account creation is simulated for demonstration.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="~/vendors/fontawesome/all.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#signupForm').submit(function(e) {
+                e.preventDefault();
+                
+                const firstName = $('#firstName').val().trim();
+                const lastName = $('#lastName').val().trim();
+                const email = $('#email').val().trim();
+                const username = $('#username').val().trim();
+                const department = $('#department').val();
+                const password = $('#password').val();
+                const confirmPassword = $('#confirmPassword').val();
+                const termsAccepted = $('#termsCheck').is(':checked');
+
+                if (!firstName || !lastName) {
+                    showAlert('Please enter your full name.', 'danger');
+                    return;
+                }
+
+                if (!email || !isValidEmail(email)) {
+                    showAlert('Please enter a valid email address.', 'danger');
+                    return;
+                }
+
+                if (!username || username.length < 3) {
+                    showAlert('Username must be at least 3 characters long.', 'danger');
+                    return;
+                }
+
+                if (!department) {
+                    showAlert('Please select your department.', 'danger');
+                    return;
+                }
+
+                if (!password || password.length < 6) {
+                    showAlert('Password must be at least 6 characters long.', 'danger');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showAlert('Passwords do not match.', 'danger');
+                    return;
+                }
+
+                if (!termsAccepted) {
+                    showAlert('Please accept the Terms of Service.', 'danger');
+                    return;
+                }
+
+                const submitBtn = $(this).find('button[type="submit"]');
+                submitBtn.html('<span class="spinner-border spinner-border-sm me-2"></span>Creating Account...').prop('disabled', true);
+
+                setTimeout(() => {
+                    showAlert('Account created successfully! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '@Url.Page("/auth/login")';
+                    }, 2000);
+                }, 2000);
+            });
+
+            function isValidEmail(email) {
+                return email.includes() && email.includes('.');
+            }
+
+            function showAlert(message, type) {
+                $('.alert:not(.alert-warning)').remove();
+                const alertHtml = '<div class="alert alert-' + type + ' alert-dismissible fade show mt-3">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                $('#signupForm').prepend(alertHtml);
+            }
+        });
+    </script>
+</body>
+</html>

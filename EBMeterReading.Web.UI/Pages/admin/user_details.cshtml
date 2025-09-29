@@ -1,0 +1,1210 @@
+﻿@page
+@model EBMeterReading.Web.UI.Pages.admin.user_detailsModel
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/admin/user_lists">Customer Disputes</a></li>
+        <li class="breadcrumb-item active" aria-current="page" id="breadcrumb-customer-name">Customer Details</li>
+    </ol>
+</nav>
+
+<div class="row align-items-center justify-content-between g-3 mb-4" id="user-details-header">
+    <!-- header populated by script -->
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xxl-4">
+        <div class="row g-3 h-100">
+            <div class="col-12 col-md-7 col-xxl-12" id="user-details-profile">
+                <!-- profile panel injected by script -->
+            </div>
+            <div class="col-12 col-md-5 col-xxl-12" id="user-details-contact">
+                <!-- contact panel injected by script -->
+            </div>
+            <div class="col-12" id="user-details-disputes">
+                <!-- dispute history panel injected by script -->
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xxl-8">
+        <div id="user-details-meter">
+            <!-- meter + summary injected by script -->
+        </div>
+        <div id="user-details-history">
+            <!-- history table injected by script -->
+        </div>
+    </div>
+</div>
+
+<!-- AI Chat Off-canvas -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="aiChatOffcanvas" aria-labelledby="aiChatOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center">
+            <div class="avatar avatar-m me-2">
+                <div class="avatar-name rounded-circle bg-info text-white">
+                    <span class="fas fa-robot"></span>
+                </div>
+            </div>
+            <div>
+                <h5 class="offcanvas-title mb-0" id="aiChatOffcanvasLabel">AI Assistant</h5>
+                <small class="text-body-secondary">Meter Reading Analysis</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0 d-flex flex-column">
+        <!-- Chat messages area -->
+        <div class="flex-1 p-3" id="ai-chat-messages" style="height: 400px; overflow-y: auto;">
+            <div class="d-flex mb-3">
+                <div class="avatar avatar-s me-2">
+                    <div class="avatar-name rounded-circle bg-info text-white fs-10">
+                        <span class="fas fa-robot"></span>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-body-secondary rounded-3 p-3">
+                        <p class="mb-0">Hello! I'm your AI assistant. I can help you analyze meter readings, check for anomalies, and provide insights about this submission. What would you like to know?</p>
+                    </div>
+                    <small class="text-body-tertiary">Just now</small>
+                </div>
+            </div>
+        </div>
+        <!-- Chat input area -->
+        <div class="border-top p-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="ai-chat-input" placeholder="Ask about this meter reading..." />
+                <button class="btn btn-primary" type="button" id="ai-send-btn">
+                    <span class="fas fa-paper-plane"></span>
+                </button>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-1">Analyze accuracy</button>
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-2">Check anomalies</button>
+                <button class="btn btn-outline-secondary btn-sm" id="ai-suggest-3">Compare history</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Add moment.js (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+ <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+    }
+    .cursor-pointer:hover {
+        opacity: 0.8;
+    }
+</style>
+
+    <script>
+        // Global variables
+        var customerId = null;
+        var currentUser = null;
+        var guserData = null;
+        var gdisputes = null;
+        var ghistory = null;
+        var gbills = null;
+
+        $(document).ready(function () {
+            initializePage();
+            setupEventHandlers();
+        });
+
+        // Initialize page
+        async function initializePage() {
+            customerId = getCustomerId();
+            if (!customerId) {
+                showError('No customer ID provided in URL');
+                return;
+            }
+            
+            await loadAllData();
+        }
+
+        async function loadAllData() {
+            try {
+                showLoading();
+                // Load user details first, then bills
+                await loadUserDetailsSync();
+                await loadCustomerBillsSync();
+                
+                // Now render all sections with complete data
+                if (currentUser) {
+                    console.log("Rendering all sections with complete data:", currentUser);
+                    renderAllSections(currentUser);
+                }
+            } catch (error) {
+                console.error("Error loading data:", error);
+                showError("Failed to load user details. Please try again.");
+            }
+        }
+
+        // Function to get customer ID from URL
+        function getCustomerId() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('customerid');
+        }
+
+        // Synchronous version of loadUserDetails
+        function loadUserDetailsSync() {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: "http://127.0.0.1:8000/user_registration/get_specific_user/" + customerId,
+                    type: "GET",
+                    contentType: "application/json",
+                    dataType: "json",
+                    success: function (data) {
+                        if (data && data.response) {
+                            guserData = data.response;
+                            currentUser = guserData;
+                            console.log("User details loaded:", currentUser);
+                            resolve(data);
+                        } else {
+                            console.error("Unexpected API response:", data);
+                            reject(new Error("User not found"));
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        // Fallback to sample data for demo
+                        loadSampleUserData();
+                        resolve(); // Resolve even with fallback data
+                    }
+                });
+            });
+        }
+
+        // Synchronous version of loadCustomerBills
+        function loadCustomerBillsSync() {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: "http://127.0.0.1:8000/bills/customer/" + customerId,
+                    type: "GET",
+                    contentType: "application/json",
+                    dataType: "json",
+                    success: function (data) {
+                        console.log("Bills API response:", data);
+                        if (data && data.success && data.bills) {
+                            gbills = data.bills;
+                            console.log("Bills loaded:", gbills);
+                            // Update the user data with bills
+                            if (currentUser) {
+                                currentUser.bills = gbills;
+                            }
+                        } else {
+                            console.error("Unexpected bills API response:", data);
+                            gbills = [];
+                            if (currentUser) {
+                                currentUser.bills = [];
+                            }
+                        }
+                        resolve(data);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Bills AJAX Error:", status, error);
+                        gbills = [];
+                        if (currentUser) {
+                            currentUser.bills = [];
+                        }
+                        resolve(); // Resolve even with error to continue
+                    }
+                });
+            });
+        }
+
+        // Function to load user details
+        async function loadUserDetails() {
+            $.ajax({
+                url: "http://127.0.0.1:8000/user_registration/get_specific_user/" + customerId,
+                type: "GET",
+                contentType: "application/json",
+                dataType: "json",
+                success: function (data) {
+                    if (data && data.response) {
+                        guserData = data.response;
+                        currentUser = guserData;
+                        // Don't render all sections here - wait for bills to load
+                        console.log("User details loaded:", currentUser);
+                    } else {
+                        console.error("Unexpected API response:", data);
+                        showError("User not found");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    // Fallback to sample data for demo
+                    loadSampleUserData();
+                }
+            });
+        }
+
+        // Function to load customer bills
+        async function loadCustomerBills() {
+            $.ajax({
+                url: "http://127.0.0.1:8000/bills/customer/" + customerId,
+                type: "GET",
+                contentType: "application/json",
+                dataType: "json",
+                success: function (data) {
+                    console.log("Bills API response:", data);
+                    if (data && data.success && data.bills) {
+                        gbills = data.bills;
+                        console.log("Bills loaded:", gbills);
+                        // Update the user data with bills
+                        if (currentUser) {
+                            currentUser.bills = gbills;
+                            // Now render all sections with both user data and bills
+                            renderAllSections(currentUser);
+                        }
+                    } else {
+                        console.error("Unexpected bills API response:", data);
+                        gbills = [];
+                        // Still render all sections even without bills
+                        if (currentUser) {
+                            currentUser.bills = [];
+                            renderAllSections(currentUser);
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Bills AJAX Error:", status, error);
+                    gbills = [];
+                    // Still render all sections with empty bills
+                    if (currentUser) {
+                        currentUser.bills = [];
+                        renderAllSections(currentUser);
+                    }
+                }
+            });
+        }
+
+        // Fallback function for demo data when API is not available
+        function loadSampleUserData() {
+                const sampleUser = {
+                    customer: {
+                        customer_id: customerId || "sample-customer-id",
+                        account_number: "542246503720",
+                        customer_name: "Joyson Mathew",
+                        email: "joyson.mathew@example.com",
+                        phone: "+91 77883 55667",
+                        address: "77 Green Valley, Trivandrum",
+                        status: "active",
+                        created_at: "2022-03-15T10:00:00Z",
+                        updated_at: "2025-02-09T10:10:00Z"
+                    },
+                    disputes: [
+                        {
+                            dispute_id: "DSP-2025-0001",
+                            bill_id: "54224650",
+                            customer_id: customerId || "sample-customer-id",
+                            issue_type: "wrong reading",
+                            description: "Meter reading does not match the billed usage for May.",
+                            evidence_photo: "/9j/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wgARCAQAA/8DASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAQFAgMGAQcI/8QAGgEBAQEBAQEBAAAAAAAAAAAAAAECAwQFBv/aAAwDAQACEAMQAAAB+/CwAAAAAAAXhcvvbEo8k7+HYXGwF0BXdLK4xMG7gmt5PZ7jGL+EKnVHKXVWFwD2uG9Cmx5p0RcvGZ4KnQdWNalWBjFm0hPL6z6dEWY2mbnjKr06j+c5p0CpvCcaLDTpscAXuzPkfhRP5VcikW1FR+jWEANPEB9f7YugA3hTb2vL7xIDxEYD0sN4GgmMZp54MRsNQgqPtJjqge0C/gMOAK6FR+EwQBXSFX5C5O1HkhfyOEQItAV/WsGaDQRQ7/9Y6Jk3OX5Axjtw0lVeh1i4URarruiH85dUIeJs96wYVEASn8mORWaaon+spETCIT/AJyEBRAFI0VMnKJrN8mW6hXkf5v+NFwPRfrCqr1DH1R8enByQIDhcERVab",
+                            status: "open",
+                            resolution: null,
+                            ai_summary: "AI Analysis: Genus 888888 kWh + L1 MD BP TB kWh",
+                            ai_suggestion: "Review meter reading accuracy",
+                            ai_confidence: "80",
+                            created_at: "2024-06-25T16:45:00Z",
+                            updated_at: "2024-06-25T16:45:00Z"
+                        },
+                        {
+                            dispute_id: "DSP-2025-0002",
+                            bill_id: "54224650",
+                            customer_id: customerId || "sample-customer-id",
+                            issue_type: "payment issue",
+                            description: "Late fee applied despite on-time payment.",
+                            evidence_photo: "/9j/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wgARCAQAA/8DASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAQFAgMGAQcI/8QAGgEBAQEBAQEBAAAAAAAAAAAAAAECAwQFBv/aAAwDAQACEAMQAAAB+/CwAAAAAAAXhcvvbEo8k7+HYXGwF0BXdLK4xMG7gmt5PZ7jGL+EKnVHKXVWFwD2uG9Cmx5p0RcvGZ4KnQdWNalWBjFm0hPL6z6dEWY2mbnjKr06j+c5p0CpvCcaLDTpscAXuzPkfhRP5VcikW1FR+jWEANPEB9f7YugA3hTb2vL7xIDxEYD0sN4GgmMZp54MRsNQgqPtJjqge0C/gMOAK6FR+EwQBXSFX5C5O1HkhfyOEQItAV/WsGaDQRQ7/9Y6Jk3OX5Axjtw0lVeh1i4URarruiH85dUIeJs96wYVEASn8mORWaaon+spETCIT/AJyEBRAFI0VMnKJrN8mW6hXkf5v+NFwPRfrCqr1DH1R8enByQIDhcERVab",
+                            status: "resolved",
+                            resolution: "Late fee refunded",
+                            ai_summary: "Payment was made on time - verified through bank records",
+                            ai_suggestion: "Refund late fee",
+                            ai_confidence: "92",
+                            created_at: "2024-05-14T18:12:00Z",
+                            updated_at: "2024-05-15T10:30:00Z"
+                        }
+                    ],
+                    history: [
+                        { 
+                            date: "2025-01-15",
+                            bill_id: "EB-2025-001",
+                            amount: "₹2,450.00",
+                            status: "Paid",
+                            due_date: "2025-01-30",
+                            payment_date: "2025-01-25",
+                            notes: "Payment received on time"
+                        },
+                        {
+                            date: "2024-12-15",
+                            bill_id: "EB-2024-012",
+                            amount: "₹2,320.00",
+                            status: "Paid",
+                            due_date: "2024-12-30",
+                            payment_date: "2024-12-28",
+                            notes: "Payment received on time"
+                        },
+                        {
+                            date: "2024-11-15",
+                            bill_id: "EB-2024-011",
+                            amount: "₹2,180.00",
+                            status: "Paid",
+                            due_date: "2024-11-30",
+                            payment_date: "2024-11-29",
+                            notes: "Payment received on time"
+                        }
+                    ]
+                };
+            currentUser = sampleUser;
+            guserData = sampleUser;
+            renderAllSections(currentUser);
+        }
+
+        // Function to show loading animation
+        function showLoading() {
+            const loadingHtml = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 mb-0">Loading user details...</p>
+                </div>
+            `;
+            $('#user-details-header').html(loadingHtml);
+        }
+
+        // Function to show error message
+        function showError(message) {
+            const errorHtml = `
+                <div class="alert alert-danger text-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${message}
+                    <button class="btn btn-outline-primary btn-sm ms-3" onclick="location.reload()">
+                        <i class="fas fa-redo me-1"></i>Retry
+                    </button>
+                </div>
+            `;
+            $('#user-details-header').html(errorHtml);
+        }
+
+        // Function to render all sections
+        function renderAllSections(user) {
+            updateBreadcrumb(user);
+            renderHeader(user);
+            renderProfile(user);
+            renderContact(user);
+            renderDisputes(user);
+            renderMeter(user);
+            renderHistory(user);
+            feather.replace();
+        }
+
+        // Function to update breadcrumb with customer name
+        function updateBreadcrumb(user) {
+            const customer = user.customer || {};
+            const customerName = customer.customer_name || 'Unknown Customer';
+            $('#breadcrumb-customer-name').text(customerName);
+        }
+    </script>
+
+    <script>
+
+        // Helper functions
+        function fixImagePath(path) {
+                return (path || '').replace('~/', '');
+        }
+
+        // Function to generate avatar color based on name
+        function getAvatarColor(name) {
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+                '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+            ];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        // Function to view full image in modal
+        function viewFullImage(imageSrc, disputeId) {
+            const modalHtml = `
+                <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="imageModalLabel">Evidence Photo - ${disputeId}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <img src="${imageSrc}" class="img-fluid rounded" alt="Evidence Photo" style="max-height: 70vh;">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            $('#imageModal').remove();
+            
+            // Add modal to body
+            $('body').append(modalHtml);
+            
+            // Show modal
+            const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            imageModal.show();
+            
+            // Remove modal from DOM when hidden
+            $('#imageModal').on('hidden.bs.modal', function () {
+                $(this).remove();
+            });
+        }
+
+        // Function to open dispute details modal
+        function openDisputeModal(disputeId) {
+            const disputes = currentUser?.disputes || [];
+            const dispute = disputes.find(d => d.dispute_id === disputeId);
+            
+            if (!dispute) {
+                showToast('Dispute not found');
+                return;
+            }
+
+            const imgSrc = "data:image/jpeg;base64," + dispute.evidence_photo;
+            
+            const modalHtml = `
+                <div class="modal fade" id="disputeModal" tabindex="-1" aria-labelledby="disputeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="disputeModalLabel">Dispute Details - ${dispute.dispute_id}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-4">
+                                    <div class="col-12 col-md-8">
+                                        <!-- AI Analysis FIRST -->
+                                        ${dispute.ai_summary || dispute.ai_suggestion || dispute.ai_confidence || dispute.ai_reading ? `
+                                            <div class="mb-4">
+                                                <h6 class="text-body-secondary mb-2">AI Analysis</h6>
+                                                <div class="card border-info">
+                                                    <div class="card-header bg-info bg-opacity-10 border-bottom border-info">
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="fas fa-robot text-info me-2"></span>
+                                                            <h6 class="mb-0 text-info">AI Analysis</h6>
+                                                            ${dispute.ai_confidence ? `
+                                                                <span class="badge bg-info text-white ms-auto">${dispute.ai_confidence}%</span>
+                                                            ` : ''}
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        ${dispute.ai_summary ? `
+                                                            <div class="mb-3">
+                                                                <small class="text-body-secondary fw-semibold">Summary:</small>
+                                                                <p class="mb-0 text-body-highlight">${dispute.ai_summary}</p>
+                                                            </div>
+                                                        ` : ''}
+                                                        ${dispute.ai_suggestion ? `
+                                                            <div class="mb-3">
+                                                                <small class="text-body-secondary fw-semibold">Suggestion:</small>
+                                                                <p class="mb-0 text-body-highlight">${dispute.ai_suggestion}</p>
+                                                            </div>
+                                                        ` : ''}
+                                                        ${dispute.ai_reading ? `
+                                                            <div class="mb-3">
+                                                                <small class="text-body-secondary fw-semibold">Reading:</small>
+                                                                <p class="mb-0 text-body-highlight">${dispute.ai_reading}</p>
+                                                            </div>
+                                                        ` : ''}
+                                                        ${dispute.resolution ? `
+                                                            <div class="mb-0">
+                                                                <small class="text-body-secondary fw-semibold">Resolution:</small>
+                                                                <p class="mb-0 text-body-highlight">${dispute.resolution}</p>
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        <!-- Customer/Dispute Summary SECOND -->
+                                        <div class="mb-4">
+                                            <h6 class="text-body-secondary mb-2">Dispute Information</h6>
+                                            <div class="border rounded-3 p-3">
+                                                <div class="row g-3">
+                                                    <div class="col-6">
+                                                        <small class="text-body-secondary">Dispute ID:</small>
+                                                        <p class="mb-0 fw-semibold">${dispute.dispute_id}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-body-secondary">Bill ID:</small>
+                                                        <p class="mb-0 fw-semibold">${dispute.bill_id}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-body-secondary">Issue Type:</small>
+                                                        <p class="mb-0 fw-semibold">${dispute.issue_type}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-body-secondary">Status:</small>
+                                                        <p class="mb-0">${createDisputeStatusBadge(dispute.status)}</p>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <small class="text-body-secondary">Description:</small>
+                                                        <p class="mb-0">${dispute.description}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-body-secondary">Created:</small>
+                                                        <p class="mb-0">${formatDateTime(dispute.created_at)}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-body-secondary">Updated:</small>
+                                                        <p class="mb-0">${formatDateTime(dispute.updated_at)}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <div class="mb-4">
+                                            <h6 class="text-body-secondary mb-2">Evidence Photo</h6>
+                                            <div class="border border-dashed rounded-3 p-3 text-center">
+                                                <img class="img-fluid rounded-3 cursor-pointer" src="${imgSrc}" 
+                                                     alt="Evidence photo" style="max-height: 300px;" 
+                                                     onclick="viewFullImage('${imgSrc}', '${dispute.dispute_id}')" />
+                                                <p class="mt-2 mb-0 text-body-secondary fs-9">Click to view full size</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                ${dispute.status === 'open' ? `
+                                    <button type="button" class="btn btn-success me-2" onclick="approveDispute('${dispute.dispute_id}')">
+                                        <i class="fas fa-check me-2"></i>Approve
+                                    </button>
+                                    <button type="button" class="btn btn-danger me-2" onclick="rejectDispute('${dispute.dispute_id}')">
+                                        <i class="fas fa-times me-2"></i>Reject
+                                    </button>
+                                    <button type="button" class="btn btn-warning" onclick="scheduleVisit('${dispute.dispute_id}')">
+                                        <i class="fas fa-calendar me-2"></i>Schedule Visit
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            $('#disputeModal').remove();
+            
+            // Add modal to body
+            $('body').append(modalHtml);
+            
+            // Show modal
+            const disputeModal = new bootstrap.Modal(document.getElementById('disputeModal'));
+            disputeModal.show();
+            
+            // Remove modal from DOM when hidden
+            $('#disputeModal').on('hidden.bs.modal', function () {
+                $(this).remove();
+            });
+        }
+
+        function createStatusBadge(status) {
+                const statusMap = {
+                    'pending': { class: 'badge-phoenix-warning', icon: 'clock' },
+                    'approved': { class: 'badge-phoenix-success', icon: 'check' },
+                    'rejected': { class: 'badge-phoenix-danger', icon: 'x' },
+                    'in progress': { class: 'badge-phoenix-info', icon: 'loader' }
+                };
+
+                const statusKey = (status || '').toLowerCase();
+                const config = statusMap[statusKey] || { class: 'badge-phoenix-secondary', icon: 'info' };
+
+                return `<span class="badge badge-phoenix fs-10 ${config.class}">
+                    <span class="badge-label">${status || 'Unknown'}</span>
+                    <span class="ms-1" data-feather="${config.icon}" style="height:12.8px;width:12.8px;"></span>
+                </span>`;
+        }
+
+        function createDisputeStatusBadge(status) {
+            const disputeStatusMap = {
+                'under review': { class: 'bg-warning text-dark', icon: 'clock' },
+                'resolved': { class: 'bg-success text-white', icon: 'check' },
+                'submitted': { class: 'bg-info text-white', icon: 'send' },
+                'rejected': { class: 'bg-danger text-white', icon: 'x' }
+            };
+
+            const statusKey = (status || '').toLowerCase().replace(' ', '');
+            const config = disputeStatusMap[statusKey] || { class: 'bg-secondary text-white', icon: 'info' };
+
+            return `<span class="badge ${config.class} rounded-pill px-3 py-2 fs-10 fw-semibold">
+                ${status || 'Unknown'}
+            </span>`;
+        }
+
+        function createBillStatusBadge(status) {
+            const billStatusMap = {
+                'paid': { class: 'bg-success text-white', icon: 'check' },
+                'unpaid': { class: 'bg-danger text-white', icon: 'x' },
+                'overdue': { class: 'bg-warning text-dark', icon: 'clock' },
+                'partial': { class: 'bg-info text-white', icon: 'minus' }
+            };
+
+            const statusKey = (status || '').toLowerCase();
+            const config = billStatusMap[statusKey] || { class: 'bg-secondary text-white', icon: 'info' };
+
+            return `<span class="badge ${config.class} rounded-pill px-2 py-1 fs-9 fw-semibold">
+                ${status || 'Unknown'}
+            </span>`;
+        }
+
+        function formatDate(dateString) {
+                return moment(dateString).format('DD MMM YYYY');
+        }
+
+        function formatDateTime(dateString) {
+                return moment(dateString).format('DD MMM YYYY, HH:mm');
+            }
+
+        // Render functions
+        function renderHeader(user) {
+            const customer = user.customer || {};
+            const headerHtml = `
+                <div class="col-auto">
+                    <h2 class="mb-0">${customer.customer_name || 'Unknown Customer'}</h2>
+                    <p class="text-body-secondary mb-0">Customer ID: ${customer.customer_id || 'N/A'}</p>
+                </div>
+                <div class="col-auto">
+                    <div class="row g-2">
+                            <div class="col-auto">
+                                <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-assistant-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Assistant">
+                                    <span class="fas fa-robot"></span>
+                                </button>
+                            </div>
+                    </div>
+                </div>
+            `;
+            $('#user-details-header').html(headerHtml);
+        }
+
+        function renderProfile(user) {
+            const customer = user.customer || {};
+            const disputes = user.disputes || [];
+            const openDisputes = disputes.filter(d => d.status === 'open').length;
+            const resolvedDisputes = disputes.filter(d => d.status === 'resolved').length;
+            
+            // Generate avatar with first letter of customer name
+            const customerName = customer.customer_name || 'Customer';
+            const firstLetter = customerName.charAt(0).toUpperCase();
+            const avatarBgColor = getAvatarColor(customerName);
+            
+            const profileHtml = `
+                <div class="card h-100 h-xxl-auto">
+                    <div class="card-body d-flex flex-column justify-content-between pb-3">
+                        <div class="row align-items-center g-4 mb-3 text-center text-sm-start">
+                            <div class="col-12 col-sm-auto mb-sm-2">
+                                    <div class="avatar avatar-5xl">
+                                        <div class="avatar-name rounded-circle text-white d-flex align-items-center justify-content-center" 
+                                             style="background-color: ${avatarBgColor}; font-size: 2rem; font-weight: bold;">
+                                            ${firstLetter}
+                                        </div>
+                                    </div>
+                            </div>
+                            <div class="col-12 col-sm-auto flex-1">
+                                <h3 class="mb-1">${customerName}</h3>
+                                <p class="text-body-secondary mb-2">Customer since ${formatDate(customer.created_at) || '—'}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-between-center border-top border-dashed pt-4">
+                            <div>
+                                <h6>Total disputes</h6>
+                                    <p class="fs-7 text-body-secondary mb-0">${disputes.length}</p>
+                            </div>
+                            <div>
+                                <h6>Resolved</h6>
+                                    <p class="fs-7 text-body-secondary mb-0">${resolvedDisputes}</p>
+                            </div>
+                            <div>
+                                <h6>Open issues</h6>
+                                    <p class="fs-7 text-body-secondary mb-0">${openDisputes}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#user-details-profile').html(profileHtml);
+        }
+
+        function renderContact(user) {
+            const customer = user.customer || {};
+            const contactHtml = `
+                <div class="card">
+                    <div class="card-body">
+                            <h3 class="mb-3">Contact details</h3>
+                        <h5 class="text-body-secondary">Address</h5>
+                            <p class="text-body-secondary mb-3">${customer.address || '—'}</p>
+                            <h5 class="text-body-secondary">Email</h5>
+                            <p class="mb-3"><a href="mailto:${customer.email || ''}">${customer.email || '—'}</a></p>
+                            <h5 class="text-body-secondary">Phone</h5>
+                            <p class="mb-0"><a href="tel:${customer.phone || ''}">${customer.phone || '—'}</a></p>
+                            <h5 class="text-body-secondary">Account Number</h5>
+                            <p class="mb-0">${customer.account_number || '—'}</p>
+                    </div>
+                </div>
+            `;
+            $('#user-details-contact').html(contactHtml);
+        }
+
+        function renderDisputes(user) {
+            const disputes = user.disputes || [];
+            let disputesHtml = `
+                <div class="card h-100">
+                    <div class="card-header border-bottom">
+                        <div class="row align-items-center justify-content-between g-3">
+                            <div class="col">
+                                <h4 class="mb-1">Dispute List</h4>
+                                <p class="text-body-secondary mb-0">Previous disputes and their current status.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+            `;
+
+            if (disputes.length === 0) {
+                disputesHtml += `
+                    <div class="text-center p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-clipboard-list text-body-tertiary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h6 class="text-body-secondary">No disputes recorded</h6>
+                        <p class="text-body-tertiary mb-0">This customer has no dispute history.</p>
+                    </div>
+                `;
+            } else {
+                disputesHtml += '<div class="p-3">';
+                disputes.forEach(dispute => {
+                    // Construct image source with base64 string
+                    let imgSrc = "data:image/jpeg;base64," + dispute.evidence_photo;
+                    
+                    disputesHtml += `
+                    <div class="border border-2 border-light rounded-3 p-3 mb-3 cursor-pointer dispute-card" 
+                         onclick="openDisputeModal('${dispute.dispute_id}')" 
+                         style="cursor: pointer; transition: all 0.2s ease; position: relative;" 
+                         onmouseover="this.style.backgroundColor='#f8f9fa'" 
+                         onmouseout="this.style.backgroundColor='transparent'">
+                        <div class="row align-items-center g-3">
+                            <div class="col-12 col-md-8">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1">Dispute ID: ${dispute.dispute_id}</h6>
+                                        <small class="text-body-secondary">Bill ID: ${dispute.bill_id}</small>
+                                    </div>
+                                    <div>
+                                        ${createDisputeStatusBadge(dispute.status)}
+                                    </div>
+                                </div>
+                                <p class="text-body-highlight mb-2">${dispute.description}</p>
+                                <div class="mb-2">
+                                    <span class="badge bg-info text-white me-2">${dispute.issue_type}</span>
+                                    ${dispute.ai_reading ? `
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-robot me-1"></i>AI: ${dispute.ai_reading}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                <small class="text-body-tertiary">
+                                    Submitted on ${formatDateTime(dispute.created_at)}
+                                </small>
+                            </div>
+                            <div class="col-12 col-md-4 text-center">
+                                <div class="border border-dashed rounded-3 p-2">
+                                    <img class="img-fluid rounded-3 cursor-pointer" src="${imgSrc}" 
+                                         alt="Evidence photo" style="max-height: 100px;" 
+                                         onclick="event.stopPropagation(); viewFullImage('${imgSrc}', '${dispute.dispute_id}')" />
+                                    <p class="mt-1 mb-0 text-body-secondary fs-9">Evidence Photo</p>
+                                </div>
+                            </div>
+                                </div>
+                        </div>
+                    `;
+                });
+                disputesHtml += '</div>';
+            }
+
+            disputesHtml += '</div></div>';
+            $('#user-details-disputes').html(disputesHtml);
+        }
+
+        function renderMeter(user) {
+            const customer = user.customer || {};
+            const disputes = user.disputes || [];
+            const latestDispute = disputes.length > 0 ? disputes[disputes.length - 1] : null;
+            
+            const meterHtml = `
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-12 col-lg-6">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h4 class="mb-0">Latest Evidence</h4>
+                                    <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-meter-analysis-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Image Analysis">
+                                        <span class="fas fa-robot"></span>
+                                    </button>
+                                </div>
+                                <div class="border border-dashed rounded-3 p-3 text-center">
+                                    ${latestDispute ? `
+                                        <img class="img-fluid rounded-3 cursor-pointer" src="data:image/jpeg;base64,${latestDispute.evidence_photo}" 
+                                             alt="Latest evidence photo" 
+                                             onclick="viewFullImage('data:image/jpeg;base64,${latestDispute.evidence_photo}', '${latestDispute.dispute_id}')" />
+                                        <p class="mt-2 mb-0 text-body-secondary">
+                                            Latest dispute evidence
+                                        </p>
+                                    ` : `
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-image text-body-tertiary" style="font-size: 3rem;"></i>
+                                            <p class="mt-2 mb-0 text-body-secondary">No evidence photos available</p>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6">
+                                <!-- AI Analysis Card FIRST -->
+                                <h4 class="mb-3">AI Analysis</h4>
+                                ${latestDispute && (latestDispute.ai_summary || latestDispute.ai_suggestion || latestDispute.ai_confidence) ? `
+                                    <div class="card border-info mb-4">
+                                        <div class="card-header bg-info bg-opacity-10 border-bottom border-info py-2">
+                                            <div class="d-flex align-items-center">
+                                                <span class="fas fa-robot text-info me-2 fs-7"></span>
+                                                <small class="mb-0 text-info fw-semibold">AI Analysis</small>
+                                                ${latestDispute.ai_confidence ? `
+                                                    <span class="badge bg-info text-white ms-auto fs-9">${latestDispute.ai_confidence}%</span>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-2">
+                                            ${latestDispute.ai_summary ? `
+                                                <div class="mb-2">
+                                                    <small class="text-body-secondary fw-semibold">Summary:</small>
+                                                    <p class="mb-1 text-body-highlight fs-9">${latestDispute.ai_summary}</p>
+                                                </div>
+                                            ` : ''}
+                                            ${latestDispute.ai_suggestion ? `
+                                                <div class="mb-1">
+                                                    <small class="text-body-secondary fw-semibold">Suggestion:</small>
+                                                    <p class="mb-0 text-body-highlight fs-9">${latestDispute.ai_suggestion}</p>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="card border-secondary mb-4">
+                                        <div class="card-body p-3 text-center">
+                                            <span class="fas fa-robot text-body-tertiary fs-4 mb-2"></span>
+                                            <p class="mb-0 text-body-secondary fs-9">No AI analysis available</p>
+                                        </div>
+                                    </div>
+                                `}
+                                <!-- Customer Summary SECOND -->
+                                <h4 class="mb-3">Customer Summary</h4>
+                                <div class="border rounded-3 p-3 bg-body-secondary bg-opacity-25 mb-3">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-body-secondary">Customer ID</span>
+                                        <span class="fw-semibold text-body-highlight">${customer.customer_id || '—'}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-body-secondary">Account Number</span>
+                                        <span class="fw-semibold text-body-highlight">${customer.account_number || '—'}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-body-secondary">Status</span>
+                                        <span class="fw-semibold text-body-highlight">${customer.status || '—'}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-body-secondary">Total Disputes</span>
+                                        <span class="fw-semibold text-body-highlight">${disputes.length}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-body-secondary">Open Disputes</span>
+                                        <span class="fw-semibold text-body-highlight">${disputes.filter(d => d.status === 'open').length}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-body-secondary">Resolved Disputes</span>
+                                        <span class="fw-semibold text-body-highlight">${disputes.filter(d => d.status === 'resolved').length}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-body-secondary">Customer Since</span>
+                                        <span class="text-body-secondary">${formatDate(customer.created_at)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#user-details-meter').html(meterHtml);
+        }
+
+        function renderHistory(user) {
+            const bills = user.bills || [];
+            console.log("renderHistory called with user:", user);
+            console.log("Bills data:", bills);
+            let historyRows = '';
+            
+            if (bills.length > 0) {
+                bills.forEach(bill => {
+                    const statusBadge = createBillStatusBadge(bill.status);
+                    const amountDue = bill.amount_due ? `₹${bill.amount_due.toFixed(2)}` : '—';
+                    const amountPaid = bill.amount_paid ? `₹${bill.amount_paid.toFixed(2)}` : '—';
+                    
+                    // Format units based on category
+                    let unitsConsumed = '—';
+                    if (bill.units_consumed) {
+                        const unit = bill.category === 'water' ? 'liters' : 'units';
+                        unitsConsumed = `${bill.units_consumed.toFixed(2)} ${unit}`;
+                    }
+                    
+                    historyRows += `
+                        <tr>
+                            <td class="text-body-secondary ps-3">${formatDate(bill.issue_date)}</td>
+                            <td class="text-body-highlight fw-semibold">${bill.bill_id || '—'}</td>
+                            <td class="text-body-highlight">${amountDue}</td>
+                            <td class="text-body-secondary">${statusBadge}</td>
+                            <td class="text-body-secondary">${formatDate(bill.due_date)}</td>
+                            <td class="text-body-secondary">${amountPaid}</td>
+                            <td class="text-body-secondary">${unitsConsumed}</td>
+                            <td class="text-body-secondary">${bill.category || '—'}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const historyHtml = `
+                <div class="card">
+                    <div class="card-header border-bottom">
+                        <div class="row align-items-center justify-content-between g-3">
+                            <div class="col">
+                                <h4 class="mb-1">Billing History</h4>
+                                <p class="text-body-secondary mb-0">Previous bills and payment history for this customer.</p>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-outline-secondary btn-sm">
+                                    <span class="fas fa-download me-2"></span>Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        ${bills.length > 0 ? `
+                        <div class="table-responsive scrollbar">
+                            <table class="table table-sm fs-9 mb-0">
+                                <thead class="bg-body-secondary bg-opacity-25 text-body-tertiary">
+                                    <tr>
+                                        <th class="text-start ps-3">Issue Date</th>
+                                        <th class="text-start">Bill ID</th>
+                                        <th class="text-start">Amount Due</th>
+                                        <th class="text-start">Status</th>
+                                        <th class="text-start">Due Date</th>
+                                        <th class="text-start">Amount Paid</th>
+                                        <th class="text-start">Units Consumed</th>
+                                        <th class="text-start">Category</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${historyRows}</tbody>
+                            </table>
+                        </div>
+                        ` : `
+                            <div class="text-center p-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-receipt text-body-tertiary" style="font-size: 3rem;"></i>
+                                </div>
+                                <h6 class="text-body-secondary">No billing history available</h6>
+                                <p class="text-body-tertiary mb-0">No billing records found for this customer.</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+            $('#user-details-history').html(historyHtml);
+        }
+
+        // Function to setup event handlers
+        function setupEventHandlers() {
+
+
+            // AI Chat event handlers
+            $('#ai-send-btn').click(function() {
+                const message = $('#ai-chat-input').val().trim();
+                if (message) {
+                    addAIMessage(message, true);
+                    $('#ai-chat-input').val('');
+                    simulateAIResponse(message);
+                }
+            });
+
+            $('#ai-chat-input').keypress(function(e) {
+                if (e.which === 13) {
+                    $('#ai-send-btn').click();
+                }
+            });
+
+            // Suggested questions
+            $('#ai-suggest-1').click(function() {
+                addAIMessage('Can you analyze the accuracy of this reading?', true);
+                simulateAIResponse('accuracy analysis');
+            });
+
+            $('#ai-suggest-2').click(function() {
+                addAIMessage('Check for any anomalies in this submission', true);
+                simulateAIResponse('anomaly check');
+            });
+
+            $('#ai-suggest-3').click(function() {
+                addAIMessage('How does this compare to historical readings?', true);
+                simulateAIResponse('historical comparison');
+            });
+        }
+
+        // Dispute action functions
+        function approveDispute(disputeId) {
+            const customerName = currentUser?.customer?.customer_name || 'Customer';
+            if (confirm(`Are you sure you want to approve this dispute for ${customerName}?`)) {
+                // Close modal
+                $('#disputeModal').modal('hide');
+                
+                // Show success message
+                showToast(`Dispute ${disputeId} has been approved successfully!`);
+                
+                // Here you would typically make an API call to update the dispute status
+                // For now, we'll just show a success message
+                console.log(`Approving dispute: ${disputeId}`);
+            }
+        }
+
+        function rejectDispute(disputeId) {
+            const reason = prompt(`Please provide a reason for rejecting dispute ${disputeId}:`);
+            if (reason && reason.trim() !== '') {
+                // Close modal
+                $('#disputeModal').modal('hide');
+                
+                // Show success message
+                showToast(`Dispute ${disputeId} has been rejected. Reason: ${reason}`);
+                
+                // Here you would typically make an API call to update the dispute status
+                // For now, we'll just show a success message
+                console.log(`Rejecting dispute: ${disputeId} with reason: ${reason}`);
+            } else if (reason !== null) {
+                alert('Please provide a reason for rejection.');
+            }
+        }
+
+        function scheduleVisit(disputeId) {
+            const customerName = currentUser?.customer?.customer_name || 'Customer';
+            const customerAddress = currentUser?.customer?.address || 'Customer address';
+            
+            if (confirm(`Schedule a visit for dispute ${disputeId}?\n\nCustomer: ${customerName}\nAddress: ${customerAddress}`)) {
+                // Close modal
+                $('#disputeModal').modal('hide');
+                
+                // Show success message
+                showToast(`Visit scheduled for dispute ${disputeId}. Customer will be notified.`);
+                
+                // Here you would typically make an API call to schedule the visit
+                // For now, we'll just show a success message
+                console.log(`Scheduling visit for dispute: ${disputeId}`);
+            }
+        }
+
+        // Function to add AI message
+            function addAIMessage(message, isUser = false) {
+                const chatMessages = $('#ai-chat-messages');
+                const messageClass = isUser ? 'bg-primary text-white ms-auto' : 'bg-body-secondary';
+                const avatarClass = isUser ? 'bg-primary' : 'bg-info';
+                const avatarIcon = isUser ? 'fa-user' : 'fa-robot';
+                
+                const messageHtml = `
+                    <div class="d-flex mb-3 ${isUser ? 'justify-content-end' : ''}">
+                        ${!isUser ? `
+                            <div class="avatar avatar-s me-2">
+                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
+                                    <span class="fas ${avatarIcon}"></span>
+                        </div>
+                    </div>
+                        ` : ''}
+                        <div class="flex-1" style="max-width: 85%;">
+                            <div class="${messageClass} rounded-3 p-3">
+                                <p class="mb-0">${message}</p>
+                </div>
+                            <small class="text-body-tertiary">Just now</small>
+                        </div>
+                        ${isUser ? `
+                            <div class="avatar avatar-s ms-2">
+                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
+                                    <span class="fas ${avatarIcon}"></span>
+                    </div>
+                </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                chatMessages.append(messageHtml);
+                chatMessages.scrollTop(chatMessages[0].scrollHeight);
+            }
+
+        // Function to simulate AI response
+            function simulateAIResponse(userMessage) {
+                const responses = [
+                    "Based on the meter image analysis, the reading appears to be 312 kWh with 97% confidence. The digits are clearly visible and align with the predicted range.",
+                    "I've detected no anomalies in this submission. The reading follows the expected consumption pattern for this customer.",
+                    "Comparing with historical data, this reading is consistent with previous months. The variance of +3 kWh is within normal range.",
+                    "The AI confidence level of 97% indicates high accuracy. The meter image quality is excellent with good lighting conditions.",
+                    "This customer has a good submission history with 4 out of 5 readings approved automatically. No red flags detected."
+                ];
+                
+                setTimeout(() => {
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    addAIMessage(randomResponse);
+                }, 1000);
+            }
+
+        // Function to show toast notification
+        function showToast(message) {
+            // Remove any existing toast
+            $('#global-toast-container').empty();
+
+            // Determine color based on message content
+            let bgClass = "text-bg-danger"; // default red
+            if (typeof message === "string" && message.toLowerCase().includes("successfully")) {
+                bgClass = "text-bg-success"; // green for success
+            }
+
+            // Toast HTML (message only)
+            const toastHtml = `
+                <div class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="3000">
+                    <div class="toast-body d-flex justify-content-between align-items-center">
+                        <span>${message}</span>
+                        <button type="button" class="btn ms-2 p-0" data-bs-dismiss="toast" aria-label="Close">
+                            <span class="uil uil-times fs-7"></span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Append and show
+            $('#global-toast-container').append(toastHtml);
+            $('#global-toast-container .toast').toast({ delay: 4000 }).toast('show');
+        }
+    </script>
+

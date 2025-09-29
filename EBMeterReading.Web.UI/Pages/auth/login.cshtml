@@ -1,0 +1,185 @@
+﻿@page
+@model EBMeterReading.Web.UI.Pages.auth.loginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Login - EB Meter Admin";
+}
+
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="~/assets/img/favicons/apple-touch-icon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="~/assets/img/favicons/favicon.ico" />
+
+    <script src="~/vendors/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/js/config.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="~/assets/css/theme.min.css" rel="stylesheet" />
+    <link href="~/assets/css/user.min.css" rel="stylesheet" />
+</head>
+<body>
+    <main class="main" id="top">
+        <div class="container-fluid bg-body-tertiary">
+            <div class="row flex-center position-relative min-vh-100 g-0 py-5">
+                <div class="col-11 col-sm-10 col-xl-8">
+                    <div class="card border border-translucent auth-card">
+                        <div class="card-body pe-md-0">
+                            <div class="row align-items-center gx-0">
+                                <div class="col-12 col-md-5 position-relative">
+                                    <div class="position-relative px-4 py-6 px-md-6 py-md-7">
+                                        <h3 class="mb-3 text-body-emphasis">EB Meter Reading System</h3>
+                                        <p class="text-body-secondary">Streamline your electricity meter reading process with our intelligent AI-powered platform.</p>
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="d-flex align-items-center mb-2">
+                                                <span class="fas fa-check-circle me-2 text-success"></span>
+                                                <span class="fw-semibold">AI-Powered Analysis</span>
+                                            </li>
+                                            <li class="d-flex align-items-center mb-2">
+                                                <span class="fas fa-check-circle me-2 text-success"></span>
+                                                <span class="fw-semibold">Real-time Processing</span>
+                                            </li>
+                                            <li class="d-flex align-items-center">
+                                                <span class="fas fa-check-circle me-2 text-success"></span>
+                                                <span class="fw-semibold">Comprehensive Reporting</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-7">
+                                    <div class="p-4 p-md-6">
+                                        <div class="text-center mb-6">
+                                            <div class="d-flex align-items-center justify-content-center mb-4">
+                                                <img src="~/assets/img/icons/logo.png" alt="EB" width="40" />
+                                                <h4 class="ms-2 mb-0 text-body-emphasis">EB Meter Admin</h4>
+                                            </div>
+                                            <h3 class="text-body-highlight">Sign In</h3>
+                                            <p class="text-body-tertiary mb-0">Access your administrator dashboard</p>
+                                        </div>
+
+                                        <form id="loginForm">
+                                            <div class="mb-3">
+                                                <label class="form-label" for="email">Username or Email</label>
+                                                <div class="form-icon-container">
+                                                    <input class="form-control form-icon-input" id="email" type="text" placeholder="Enter username or email" />
+                                                    <span class="fas fa-user text-body fs-9 form-icon"></span>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label" for="password">Password</label>
+                                                <div class="form-icon-container">
+                                                    <input class="form-control form-icon-input" id="password" type="password" placeholder="Enter password" />
+                                                    <span class="fas fa-key text-body fs-9 form-icon"></span>
+                                                </div>
+                                            </div>
+                                            <div class="row flex-between-center mb-4">
+                                                <div class="col-auto">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" id="rememberMe" type="checkbox" />
+                                                        <label class="form-check-label" for="rememberMe">Remember me</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <a class="fs-9 fw-semibold" href="@Url.Page("/auth/resetpassword")">Forgot Password?</a>
+                                                </div>
+                                            </div>
+                                            <button class="btn btn-primary w-100 mb-3" type="submit">
+                                                <span class="fas fa-sign-in-alt me-2"></span>Sign In
+                                            </button>
+                                            <div class="text-center">
+                                                <span class="fs-9 fw-bold">Don't have an account? </span>
+                                                <a class="link-primary fs-9 fw-bold" href="@Url.Page("/auth/signup")">Create Account</a>
+                                            </div>
+                                        </form>
+
+                                        <!-- Demo credentials -->
+                                        <div class="alert alert-info mt-4">
+                                            <div class="d-flex align-items-center">
+                                                <span class="fas fa-info-circle me-2"></span>
+                                                <div>
+                                                    <strong>Demo Credentials:</strong><br>
+                                                    <small>Username: <strong>admin</strong> | Password: <strong>admin123</strong></small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/vendors/popper/popper.min.js"></script>
+    <script src="~/vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="~/vendors/fontawesome/all.min.js"></script>
+    <script src="~/assets/js/phoenix.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Demo credentials
+            const demoCredentials = {
+                username: 'admin',
+                password: 'admin123'
+            };
+
+            // Pre-fill demo credentials
+            $('#email').val('admin');
+            $('#password').val('admin123');
+
+            // Handle form submission
+            $('#loginForm').submit(function(e) {
+                e.preventDefault();
+                
+                const username = $('#email').val().trim();
+                const password = $('#password').val().trim();
+                
+                if (!username || !password) {
+                    showAlert('Please enter both username and password.', 'danger');
+                    return;
+                }
+
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalText = submitBtn.html();
+                submitBtn.html('<span class="spinner-border spinner-border-sm me-2"></span>Signing in...').prop('disabled', true);
+
+                setTimeout(() => {
+                    if (username === demoCredentials.username && password === demoCredentials.password) {
+                        showAlert('Login successful! Redirecting...', 'success');
+                        
+                        sessionStorage.setItem('isLoggedIn', 'true');
+                        sessionStorage.setItem('username', username);
+                        
+                        setTimeout(() => {
+                            window.location.href = '@Url.Page("/admin/dashboard")';
+                        }, 1000);
+                    } else {
+                        showAlert('Invalid credentials. Please try again.', 'danger');
+                        submitBtn.html(originalText).prop('disabled', false);
+                    }
+                }, 1500);
+            });
+
+            function showAlert(message, type) {
+                $('.alert:not(.alert-info)').remove();
+                
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show mt-3">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('#loginForm').prepend(alertHtml);
+            }
+        });
+    </script>
+</body>
+</html>

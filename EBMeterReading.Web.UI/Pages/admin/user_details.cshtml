@@ -45,8 +45,8 @@
     <div class="offcanvas-header border-bottom">
         <div class="d-flex align-items-center">
             <div class="avatar avatar-m me-2">
-                <div class="avatar-name rounded-circle bg-info text-white">
-                    <span class="fas fa-robot"></span>
+                <div class="avatar-name rounded-circle bg-info text-white d-flex align-items-center justify-content-center">
+                    <img src="/assets/img/image.png" alt="AI" style="width: 20px; height: 20px;" />
                 </div>
             </div>
             <div>
@@ -61,8 +61,8 @@
         <div class="flex-1 p-3" id="ai-chat-messages" style="height: 400px; overflow-y: auto;">
             <div class="d-flex mb-3">
                 <div class="avatar avatar-s me-2">
-                    <div class="avatar-name rounded-circle bg-info text-white fs-10">
-                        <span class="fas fa-robot"></span>
+                    <div class="avatar-name rounded-circle bg-info text-white fs-10 d-flex align-items-center justify-content-center">
+                        <img src="/assets/img/image.png" alt="AI" style="width: 16px; height: 16px;" />
                     </div>
                 </div>
                 <div class="flex-1">
@@ -108,6 +108,7 @@
     <script>
         // Global variables
         var customerId = null;
+        var disputeId = null;
         var currentUser = null;
         var guserData = null;
         var gdisputes = null;
@@ -122,6 +123,7 @@
         // Initialize page
         async function initializePage() {
             customerId = getCustomerId();
+            disputeId = getDisputeId();
             if (!customerId) {
                 showError('No customer ID provided in URL');
                 return;
@@ -152,6 +154,12 @@
         function getCustomerId() {
                 const params = new URLSearchParams(window.location.search);
                 return params.get('customerid');
+        }
+
+        // Function to get dispute ID from URL
+        function getDisputeId() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('disputeid');
         }
 
         // Synchronous version of loadUserDetails
@@ -471,8 +479,28 @@
             });
         }
 
+        // Function to fetch bill details by bill ID
+        async function fetchBillDetails(billId) {
+            try {
+                const response = await $.ajax({
+                    url: `http://127.0.0.1:8000/bills/${billId}`,
+                    type: "GET",
+                    contentType: "application/json",
+                    dataType: "json"
+                });
+                
+                if (response && response.success && response.bill) {
+                    return response.bill;
+                }
+                return null;
+            } catch (error) {
+                console.error("Error fetching bill details:", error);
+                return null;
+            }
+        }
+
         // Function to open dispute details modal
-        function openDisputeModal(disputeId) {
+        async function openDisputeModal(disputeId) {
             const disputes = currentUser?.disputes || [];
             const dispute = disputes.find(d => d.dispute_id === disputeId);
             
@@ -482,6 +510,9 @@
             }
 
             const imgSrc = "data:image/jpeg;base64," + dispute.evidence_photo;
+            
+            // Fetch bill details for this dispute
+            const billDetails = await fetchBillDetails(dispute.bill_id);
             
             const modalHtml = `
                 <div class="modal fade" id="disputeModal" tabindex="-1" aria-labelledby="disputeModalLabel" aria-hidden="true">
@@ -494,14 +525,64 @@
                             <div class="modal-body">
                                 <div class="row g-4">
                                     <div class="col-12 col-md-8">
-                                        <!-- AI Analysis FIRST -->
+                                        <!-- Meter Reading Details FIRST -->
+                                        ${billDetails ? `
+                                            <div class="mb-4">
+                                                <h6 class="text-body-secondary mb-2">Meter Reading Details</h6>
+                                                <div class="card border-primary">
+                                                    <div class="card-header bg-primary bg-opacity-10 border-bottom border-primary">
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="fas fa-tachometer-alt text-primary me-2"></span>
+                                                            <h6 class="mb-0 text-primary">Bill Information</h6>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row g-3">
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Bill ID:</small>
+                                                                <p class="mb-0 text-body-highlight">${billDetails.bill_id}</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Billing Period:</small>
+                                                                <p class="mb-0 text-body-highlight">${billDetails.billing_period}</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Meter Reading Start:</small>
+                                                                <p class="mb-0 text-body-highlight">${billDetails.meter_reading_start} kWh</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Meter Reading End:</small>
+                                                                <p class="mb-0 text-body-highlight">${billDetails.meter_reading_end} kWh</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Units Consumed:</small>
+                                                                <p class="mb-0 text-body-highlight">${billDetails.units_consumed} kWh</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Rate per Unit:</small>
+                                                                <p class="mb-0 text-body-highlight">₹${billDetails.rate_per_unit}</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Amount Due:</small>
+                                                                <p class="mb-0 text-body-highlight">₹${billDetails.amount_due}</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-body-secondary fw-semibold">Status:</small>
+                                                                <p class="mb-0">${createBillStatusBadge(billDetails.status)}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        <!-- AI Analysis SECOND -->
                                         ${dispute.ai_summary || dispute.ai_suggestion || dispute.ai_confidence || dispute.ai_reading ? `
                                             <div class="mb-4">
                                                 <h6 class="text-body-secondary mb-2">AI Analysis</h6>
                                                 <div class="card border-info">
-                                                    <div class="card-header bg-info bg-opacity-10 border-bottom border-info">
+                                                    <div class="card-header bg-opacity-10 border-bottom border-info">
                                                         <div class="d-flex align-items-center">
-                                                            <span class="fas fa-robot text-info me-2"></span>
+                                                            <img src="/assets/img/image.png" alt="AI" style="width: 20px; height: 20px;" class="me-2" />
                                                             <h6 class="mb-0 text-info">AI Analysis</h6>
                                                             ${dispute.ai_confidence ? `
                                                                 <span class="badge bg-info text-white ms-auto">${dispute.ai_confidence}%</span>
@@ -512,25 +593,33 @@
                                                         ${dispute.ai_summary ? `
                                                             <div class="mb-3">
                                                                 <small class="text-body-secondary fw-semibold">Summary:</small>
-                                                                <p class="mb-0 text-body-highlight">${dispute.ai_summary}</p>
+                                                                <div class="text-body-highlight">
+                                                                    ${formatAIResponse(dispute.ai_summary)}
+                                                                </div>
                                                             </div>
                                                         ` : ''}
                                                         ${dispute.ai_suggestion ? `
                                                             <div class="mb-3">
                                                                 <small class="text-body-secondary fw-semibold">Suggestion:</small>
-                                                                <p class="mb-0 text-body-highlight">${dispute.ai_suggestion}</p>
+                                                                <div class="text-body-highlight">
+                                                                    ${formatAIResponse(dispute.ai_suggestion)}
+                                                                </div>
                                                             </div>
                                                         ` : ''}
                                                         ${dispute.ai_reading ? `
                                                             <div class="mb-3">
                                                                 <small class="text-body-secondary fw-semibold">Reading:</small>
-                                                                <p class="mb-0 text-body-highlight">${dispute.ai_reading}</p>
+                                                                <div class="text-body-highlight">
+                                                                    ${formatAIResponse(dispute.ai_reading)}
+                                                                </div>
                                                             </div>
                                                         ` : ''}
                                                         ${dispute.resolution ? `
                                                             <div class="mb-0">
                                                                 <small class="text-body-secondary fw-semibold">Resolution:</small>
-                                                                <p class="mb-0 text-body-highlight">${dispute.resolution}</p>
+                                                                <div class="text-body-highlight">
+                                                                    ${formatAIResponse(dispute.resolution)}
+                                                                </div>
                                                             </div>
                                                         ` : ''}
                                                     </div>
@@ -581,7 +670,11 @@
                                                 <img class="img-fluid rounded-3 cursor-pointer" src="${imgSrc}" 
                                                      alt="Evidence photo" style="max-height: 300px;" 
                                                      onclick="viewFullImage('${imgSrc}', '${dispute.dispute_id}')" />
-                                                <p class="mt-2 mb-0 text-body-secondary fs-9">Click to view full size</p>
+                                                <p class="mt-2 mb-1 text-body-secondary fs-9">Click to view full size</p>
+                                                <p class="mb-0 text-body-tertiary fs-10">
+                                                    <i class="fas fa-calendar-alt me-1"></i>
+                                                    Submitted: ${formatDateTime(dispute.created_at)}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -679,6 +772,29 @@
                 return moment(dateString).format('DD MMM YYYY, HH:mm');
             }
 
+        // Function to format AI response in human-readable format
+        function formatAIResponse(aiText) {
+            if (!aiText) return '';
+            
+            // Split by common delimiters and create bullet points
+            const sentences = aiText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            
+            if (sentences.length <= 1) {
+                return `<p class="mb-0">${aiText}</p>`;
+            }
+            
+            let formatted = '<ul class="mb-0 ps-3">';
+            sentences.forEach(sentence => {
+                const trimmed = sentence.trim();
+                if (trimmed.length > 0) {
+                    formatted += `<li class="mb-1">${trimmed}.</li>`;
+                }
+            });
+            formatted += '</ul>';
+            
+            return formatted;
+            }
+
         // Render functions
         function renderHeader(user) {
             const customer = user.customer || {};
@@ -690,8 +806,8 @@
                 <div class="col-auto">
                     <div class="row g-2">
                             <div class="col-auto">
-                                <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-assistant-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Assistant">
-                                    <span class="fas fa-robot"></span>
+                                <button class="btn btn-lg rounded-circle p-4" id="ai-assistant-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Assistant">
+                                    <img src="/assets/img/image.png" alt="AI" style="width: 32px; height: 32px;" />
                                 </button>
                             </div>
                     </div>
@@ -713,33 +829,33 @@
             
             const profileHtml = `
                 <div class="card h-100 h-xxl-auto">
-                    <div class="card-body d-flex flex-column justify-content-between pb-3">
-                        <div class="row align-items-center g-4 mb-3 text-center text-sm-start">
-                            <div class="col-12 col-sm-auto mb-sm-2">
-                                    <div class="avatar avatar-5xl">
+                    <div class="card-body d-flex flex-column justify-content-between pb-2">
+                        <div class="row align-items-center g-3 mb-2 text-center text-sm-start">
+                            <div class="col-12 col-sm-auto mb-sm-1">
+                                    <div class="avatar avatar-4xl">
                                         <div class="avatar-name rounded-circle text-white d-flex align-items-center justify-content-center" 
-                                             style="background-color: ${avatarBgColor}; font-size: 2rem; font-weight: bold;">
+                                             style="background-color: ${avatarBgColor}; font-size: 1.5rem; font-weight: bold;">
                                             ${firstLetter}
                                         </div>
                                     </div>
                             </div>
                             <div class="col-12 col-sm-auto flex-1">
-                                <h3 class="mb-1">${customerName}</h3>
-                                <p class="text-body-secondary mb-2">Customer since ${formatDate(customer.created_at) || '—'}</p>
+                                <h4 class="mb-1">${customerName}</h4>
+                                <p class="text-body-secondary mb-1 fs-9">Customer since ${formatDate(customer.created_at) || '—'}</p>
                             </div>
                         </div>
-                        <div class="d-flex flex-between-center border-top border-dashed pt-4">
+                        <div class="d-flex flex-between-center border-top border-dashed pt-2">
                             <div>
-                                <h6>Total disputes</h6>
-                                    <p class="fs-7 text-body-secondary mb-0">${disputes.length}</p>
+                                <h6 class="fs-9">Total disputes</h6>
+                                    <p class="fs-8 text-body-secondary mb-0">${disputes.length}</p>
                             </div>
                             <div>
-                                <h6>Resolved</h6>
-                                    <p class="fs-7 text-body-secondary mb-0">${resolvedDisputes}</p>
+                                <h6 class="fs-9">Resolved</h6>
+                                    <p class="fs-8 text-body-secondary mb-0">${resolvedDisputes}</p>
                             </div>
                             <div>
-                                <h6>Open issues</h6>
-                                    <p class="fs-7 text-body-secondary mb-0">${openDisputes}</p>
+                                <h6 class="fs-9">Open issues</h6>
+                                    <p class="fs-8 text-body-secondary mb-0">${openDisputes}</p>
                             </div>
                         </div>
                     </div>
@@ -752,16 +868,16 @@
             const customer = user.customer || {};
             const contactHtml = `
                 <div class="card">
-                    <div class="card-body">
-                            <h3 class="mb-3">Contact details</h3>
-                        <h5 class="text-body-secondary">Address</h5>
-                            <p class="text-body-secondary mb-3">${customer.address || '—'}</p>
-                            <h5 class="text-body-secondary">Email</h5>
-                            <p class="mb-3"><a href="mailto:${customer.email || ''}">${customer.email || '—'}</a></p>
-                            <h5 class="text-body-secondary">Phone</h5>
-                            <p class="mb-0"><a href="tel:${customer.phone || ''}">${customer.phone || '—'}</a></p>
-                            <h5 class="text-body-secondary">Account Number</h5>
-                            <p class="mb-0">${customer.account_number || '—'}</p>
+                    <div class="card-body p-3">
+                            <h5 class="mb-2">Contact details</h5>
+                        <h6 class="text-body-secondary fs-9">Address</h6>
+                            <p class="text-body-secondary mb-2 fs-9">${customer.address || '—'}</p>
+                            <h6 class="text-body-secondary fs-9">Email</h6>
+                            <p class="mb-2 fs-9"><a href="mailto:${customer.email || ''}">${customer.email || '—'}</a></p>
+                            <h6 class="text-body-secondary fs-9">Phone</h6>
+                            <p class="mb-2 fs-9"><a href="tel:${customer.phone || ''}">${customer.phone || '—'}</a></p>
+                            <h6 class="text-body-secondary fs-9">Account Number</h6>
+                            <p class="mb-0 fs-9">${customer.account_number || '—'}</p>
                     </div>
                 </div>
             `;
@@ -821,11 +937,12 @@
                                     <span class="badge bg-info text-white me-2">${dispute.issue_type}</span>
                                     ${dispute.ai_reading ? `
                                         <span class="badge bg-warning text-dark">
-                                            <i class="fas fa-robot me-1"></i>AI: ${dispute.ai_reading}
+                                            <img src="/assets/img/image.png" alt="AI" style="width: 12px; height: 12px;" class="me-1" />AI: ${dispute.ai_reading}
                                         </span>
                                     ` : ''}
                                 </div>
                                 <small class="text-body-tertiary">
+                                    <i class="fas fa-calendar-alt me-1"></i>
                                     Submitted on ${formatDateTime(dispute.created_at)}
                                 </small>
                             </div>
@@ -851,26 +968,39 @@
         function renderMeter(user) {
             const customer = user.customer || {};
             const disputes = user.disputes || [];
-            const latestDispute = disputes.length > 0 ? disputes[disputes.length - 1] : null;
+            
+            // Get specific dispute if disputeId is provided, otherwise get latest
+            let selectedDispute = null;
+            if (disputeId) {
+                selectedDispute = disputes.find(d => d.dispute_id === disputeId);
+            }
+            // Fallback to latest dispute if specific dispute not found or no disputeId provided
+            if (!selectedDispute) {
+                selectedDispute = disputes.length > 0 ? disputes[disputes.length - 1] : null;
+            }
             
             const meterHtml = `
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div class="row g-4 align-items-center">
+                        <div class="row g-4">
                             <div class="col-12 col-lg-6">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h4 class="mb-0">Latest Evidence</h4>
-                                    <button class="btn btn-info btn-sm rounded-circle p-2" id="ai-meter-analysis-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Image Analysis">
-                                        <span class="fas fa-robot"></span>
+                                    <button class="btn btn-sm rounded-circle p-2" id="ai-meter-analysis-btn" data-bs-toggle="offcanvas" data-bs-target="#aiChatOffcanvas" title="AI Image Analysis">
+                                        <img src="/assets/img/image.png" alt="AI" style="width: 16px; height: 16px;" />
                                     </button>
                                 </div>
                                 <div class="border border-dashed rounded-3 p-3 text-center">
-                                    ${latestDispute ? `
-                                        <img class="img-fluid rounded-3 cursor-pointer" src="data:image/jpeg;base64,${latestDispute.evidence_photo}" 
-                                             alt="Latest evidence photo" 
-                                             onclick="viewFullImage('data:image/jpeg;base64,${latestDispute.evidence_photo}', '${latestDispute.dispute_id}')" />
-                                        <p class="mt-2 mb-0 text-body-secondary">
-                                            Latest dispute evidence
+                                    ${selectedDispute ? `
+                                        <img class="img-fluid rounded-3 cursor-pointer" src="data:image/jpeg;base64,${selectedDispute.evidence_photo}" 
+                                             alt="Evidence photo" 
+                                             onclick="viewFullImage('data:image/jpeg;base64,${selectedDispute.evidence_photo}', '${selectedDispute.dispute_id}')" />
+                                        <p class="mt-2 mb-1 text-body-secondary">
+                                            ${disputeId ? 'Selected dispute evidence' : 'Latest dispute evidence'}
+                                        </p>
+                                        <p class="mb-0 text-body-tertiary fs-10">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            Submitted: ${formatDateTime(selectedDispute.created_at)}
                                         </p>
                                     ` : `
                                         <div class="text-center py-4">
@@ -881,45 +1011,63 @@
                                 </div>
                             </div>
                             <div class="col-12 col-lg-6">
-                                <!-- AI Analysis Card FIRST -->
-                                <h4 class="mb-3">AI Analysis</h4>
-                                ${latestDispute && (latestDispute.ai_summary || latestDispute.ai_suggestion || latestDispute.ai_confidence) ? `
-                                    <div class="card border-info mb-4">
-                                        <div class="card-header bg-info bg-opacity-10 border-bottom border-info py-2">
+                                <!-- Meter Reading Details FIRST -->
+                                ${selectedDispute ? `
+                                    <h4 class="mb-3">Meter Reading Details</h4>
+                                    <div class="card border-primary mb-4">
+                                        <div class="card-header bg-primary bg-opacity-10 border-bottom border-primary py-2">
                                             <div class="d-flex align-items-center">
-                                                <span class="fas fa-robot text-info me-2 fs-7"></span>
-                                                <small class="mb-0 text-info fw-semibold">AI Analysis</small>
-                                                ${latestDispute.ai_confidence ? `
-                                                    <span class="badge bg-info text-white ms-auto fs-9">${latestDispute.ai_confidence}%</span>
+                                                <span class="fas fa-tachometer-alt text-primary me-2 fs-7"></span>
+                                                <small class="mb-0 text-primary fw-semibold">Bill Information</small>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-3">
+                                            <div class="row g-3">
+                                                <div class="col-6">
+                                                    <small class="text-body-secondary fw-semibold">Bill ID:</small>
+                                                    <p class="mb-1 text-body-highlight fs-9">${selectedDispute.bill_id}</p>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-body-secondary fw-semibold">Issue Type:</small>
+                                                    <p class="mb-1 text-body-highlight fs-9">${selectedDispute.issue_type}</p>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="text-center p-2 bg-body-secondary bg-opacity-25 rounded-3">
+                                                        <small class="text-body-secondary fw-semibold">Reading Start</small>
+                                                        <p class="mb-0 text-body-highlight fw-bold fs-9" id="reading-start-value">Loading...</p>
+                                        </div>
+                                    </div>
+                                                <div class="col-4">
+                                                    <div class="text-center p-2 bg-body-secondary bg-opacity-25 rounded-3">
+                                                        <small class="text-body-secondary fw-semibold">Reading End</small>
+                                                        <p class="mb-0 text-body-highlight fw-bold fs-9" id="reading-end-value">Loading...</p>
+                                        </div>
+                                    </div>
+                                                <div class="col-4">
+                                                    <div class="text-center p-2 bg-primary bg-opacity-10 rounded-3">
+                                                        <small class="text-body-secondary fw-semibold">Units Consumed</small>
+                                                        <p class="mb-0 text-primary fw-bold fs-9" id="units-consumed-value">Loading...</p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <small class="text-body-secondary fw-semibold">Description:</small>
+                                                    <p class="mb-0 text-body-highlight fs-9">${selectedDispute.description}</p>
+                                                </div>
+                                                ${selectedDispute.ai_reading ? `
+                                                    <div class="col-12">
+                                                        <div class="text-center p-2 bg-info bg-opacity-10 rounded-3 border border-info">
+                                                            <small class="text-info fw-semibold">AI Reading Analysis</small>
+                                                            <p class="mb-0 text-info fw-bold fs-9">${selectedDispute.ai_reading}</p>
+                                                        </div>
+                                                    </div>
                                                 ` : ''}
                                             </div>
                                         </div>
-                                        <div class="card-body p-2">
-                                            ${latestDispute.ai_summary ? `
-                                                <div class="mb-2">
-                                                    <small class="text-body-secondary fw-semibold">Summary:</small>
-                                                    <p class="mb-1 text-body-highlight fs-9">${latestDispute.ai_summary}</p>
-                                                </div>
-                                            ` : ''}
-                                            ${latestDispute.ai_suggestion ? `
-                                                <div class="mb-1">
-                                                    <small class="text-body-secondary fw-semibold">Suggestion:</small>
-                                                    <p class="mb-0 text-body-highlight fs-9">${latestDispute.ai_suggestion}</p>
-                                                </div>
-                                            ` : ''}
-                                        </div>
                                     </div>
-                                ` : `
-                                    <div class="card border-secondary mb-4">
-                                        <div class="card-body p-3 text-center">
-                                            <span class="fas fa-robot text-body-tertiary fs-4 mb-2"></span>
-                                            <p class="mb-0 text-body-secondary fs-9">No AI analysis available</p>
-                                        </div>
-                                    </div>
-                                `}
+                                ` : ''}
                                 <!-- Customer Summary SECOND -->
                                 <h4 class="mb-3">Customer Summary</h4>
-                                <div class="border rounded-3 p-3 bg-body-secondary bg-opacity-25 mb-3">
+                                <div class="border rounded-3 p-3 bg-body-secondary bg-opacity-25">
                                     <div class="d-flex justify-content-between mb-3">
                                         <span class="text-body-secondary">Customer ID</span>
                                         <span class="fw-semibold text-body-highlight">${customer.customer_id || '—'}</span>
@@ -951,10 +1099,89 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- AI Analysis Full Width at Bottom -->
+                        ${selectedDispute && (selectedDispute.ai_summary || selectedDispute.ai_suggestion || selectedDispute.ai_confidence) ? `
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info bg-opacity-10 border-bottom border-info">
+                                            <div class="d-flex align-items-center">
+                                                <img src="/assets/img/image.png" alt="AI" style="width: 20px; height: 20px;" class="me-2" />
+                                                <h6 class="mb-0 text-info">AI Analysis</h6>
+                                                ${selectedDispute.ai_confidence ? `
+                                                    <span class="badge bg-info text-white ms-auto">${selectedDispute.ai_confidence}</span>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-4">
+                                                ${selectedDispute.ai_summary ? `
+                                                    <div class="col-12 col-md-6">
+                                                        <small class="text-body-secondary fw-semibold">Summary:</small>
+                                                        <div class="text-body-highlight mt-1">
+                                                            ${formatAIResponse(selectedDispute.ai_summary)}
+                                                        </div>
+                                                    </div>
+                                                ` : ''}
+                                                ${selectedDispute.ai_suggestion ? `
+                                                    <div class="col-12 col-md-6">
+                                                        <small class="text-body-secondary fw-semibold">Suggestion:</small>
+                                                        <div class="text-body-highlight mt-1">
+                                                            ${formatAIResponse(selectedDispute.ai_suggestion)}
+                                                        </div>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h4 class="mb-3">AI Analysis</h4>
+                                    <div class="card border-secondary">
+                                        <div class="card-body p-4 text-center">
+                                            <img src="/assets/img/image.png" alt="AI" style="width: 48px; height: 48px;" class="mb-3" />
+                                            <p class="mb-0 text-body-secondary">No AI analysis available</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `}
                     </div>
                 </div>
             `;
             $('#user-details-meter').html(meterHtml);
+            
+            // Load bill details for the selected dispute if it exists
+            if (selectedDispute) {
+                loadBillDetailsForMeter(selectedDispute.bill_id);
+            }
+        }
+
+        // Function to load bill details and populate meter reading values
+        async function loadBillDetailsForMeter(billId) {
+            try {
+                const billDetails = await fetchBillDetails(billId);
+                if (billDetails) {
+                    // Update the meter reading values with actual bill data
+                    $('#reading-start-value').text(billDetails.meter_reading_start || 'N/A');
+                    $('#reading-end-value').text(billDetails.meter_reading_end || 'N/A');
+                    $('#units-consumed-value').text(billDetails.units_consumed || 'N/A');
+                } else {
+                    // Fallback to N/A if bill details not found
+                    $('#reading-start-value').text('N/A');
+                    $('#reading-end-value').text('N/A');
+                    $('#units-consumed-value').text('N/A');
+                }
+            } catch (error) {
+                console.error("Error loading bill details for meter:", error);
+                // Fallback to N/A on error
+                $('#reading-start-value').text('N/A');
+                $('#reading-end-value').text('N/A');
+                $('#units-consumed-value').text('N/A');
+            }
         }
 
         function renderHistory(user) {
@@ -1132,14 +1359,13 @@
                 const chatMessages = $('#ai-chat-messages');
                 const messageClass = isUser ? 'bg-primary text-white ms-auto' : 'bg-body-secondary';
                 const avatarClass = isUser ? 'bg-primary' : 'bg-info';
-                const avatarIcon = isUser ? 'fa-user' : 'fa-robot';
                 
                 const messageHtml = `
                     <div class="d-flex mb-3 ${isUser ? 'justify-content-end' : ''}">
                         ${!isUser ? `
                             <div class="avatar avatar-s me-2">
-                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
-                                    <span class="fas ${avatarIcon}"></span>
+                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10 d-flex align-items-center justify-content-center">
+                                    <img src="/assets/img/image.png" alt="AI" style="width: 16px; height: 16px;" />
                         </div>
                     </div>
                         ` : ''}
@@ -1151,8 +1377,8 @@
                         </div>
                         ${isUser ? `
                             <div class="avatar avatar-s ms-2">
-                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10">
-                                    <span class="fas ${avatarIcon}"></span>
+                                <div class="avatar-name rounded-circle ${avatarClass} text-white fs-10 d-flex align-items-center justify-content-center">
+                                    <span class="fas fa-user"></span>
                     </div>
                 </div>
                         ` : ''}

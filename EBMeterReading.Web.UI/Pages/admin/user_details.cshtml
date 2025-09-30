@@ -94,6 +94,8 @@
     <!-- Add moment.js (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ <!-- Add marked.js for markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
     .cursor-pointer {
@@ -585,11 +587,21 @@
                                                             <img src="/assets/img/image.png" alt="AI" style="width: 20px; height: 20px;" class="me-2" />
                                                             <h6 class="mb-0 text-info">AI Analysis</h6>
                                                             ${dispute.ai_confidence ? `
-                                                                <span class="badge bg-info text-white ms-auto">${dispute.ai_confidence}%</span>
+                                                                <span class="badge bg-info text-white ms-auto">
+                                                                    Confidence:${dispute.ai_confidence}
+                                                                </span>
                                                             ` : ''}
                                                         </div>
                                                     </div>
                                                     <div class="card-body">
+                                                        ${dispute.ai_reading ? `
+                                                            <div class="mb-3">
+                                                                <small class="text-body-secondary fw-semibold">Reading:</small>
+                                                                <div class="text-body-highlight">
+                                                                    ${dispute.ai_reading}
+                                                                </div>
+                                                            </div>
+                                                        ` : ''}
                                                         ${dispute.ai_summary ? `
                                                             <div class="mb-3">
                                                                 <small class="text-body-secondary fw-semibold">Summary:</small>
@@ -603,15 +615,7 @@
                                                                 <small class="text-body-secondary fw-semibold">Suggestion:</small>
                                                                 <div class="text-body-highlight">
                                                                     ${formatAIResponse(dispute.ai_suggestion)}
-                                                                </div>
                                                             </div>
-                                                        ` : ''}
-                                                        ${dispute.ai_reading ? `
-                                                            <div class="mb-3">
-                                                                <small class="text-body-secondary fw-semibold">Reading:</small>
-                                                                <div class="text-body-highlight">
-                                                                    ${formatAIResponse(dispute.ai_reading)}
-                                                                </div>
                                                             </div>
                                                         ` : ''}
                                                         ${dispute.resolution ? `
@@ -772,27 +776,62 @@
                 return moment(dateString).format('DD MMM YYYY, HH:mm');
             }
 
-        // Function to format AI response in human-readable format
+        // Function to format AI response in markdown format
         function formatAIResponse(aiText) {
             if (!aiText) return '';
             
-            // Split by common delimiters and create bullet points
-            const sentences = aiText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-            
-            if (sentences.length <= 1) {
+            try {
+                // Check if the text contains markdown syntax
+                const hasMarkdown = /[#*`\[\]()]/.test(aiText);
+                
+                if (hasMarkdown) {
+                    // Configure marked options for better rendering
+                    marked.setOptions({
+                        breaks: true,
+                        gfm: true,
+                        sanitize: false
+                    });
+                    
+                    // Parse markdown to HTML
+                    const htmlContent = marked.parse(aiText);
+                    
+                    // Add Bootstrap classes for better styling
+                    const styledContent = htmlContent
+                        .replace(/<h1>/g, '<h5 class="text-info fw-bold">')
+                        .replace(/<h2>/g, '<h6 class="text-info fw-bold">')
+                        .replace(/<h3>/g, '<h6 class="text-info fw-semibold">')
+                        .replace(/<ul>/g, '<ul class="mb-0 ps-3">')
+                        .replace(/<ol>/g, '<ol class="mb-0 ps-3">')
+                        .replace(/<li>/g, '<li class="mb-1">')
+                        .replace(/<p>/g, '<p class="mb-2">')
+                        .replace(/<code>/g, '<code class="bg-light px-1 rounded">')
+                        .replace(/<blockquote>/g, '<blockquote class="border-start border-info border-3 ps-3 bg-info bg-opacity-10">');
+                    
+                    return styledContent;
+                } else {
+                    // Fallback to original bullet point format for non-markdown text
+                    const sentences = aiText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                    
+                    if (sentences.length <= 1) {
+                        return `<p class="mb-0">${aiText}</p>`;
+                    }
+                    
+                    let formatted = '<ul class="mb-0 ps-3">';
+                    sentences.forEach(sentence => {
+                        const trimmed = sentence.trim();
+                        if (trimmed.length > 0) {
+                            formatted += `<li class="mb-1">${trimmed}.</li>`;
+                        }
+                    });
+                    formatted += '</ul>';
+                    
+                    return formatted;
+                }
+            } catch (error) {
+                console.error('Error parsing markdown:', error);
+                // Fallback to plain text if markdown parsing fails
                 return `<p class="mb-0">${aiText}</p>`;
             }
-            
-            let formatted = '<ul class="mb-0 ps-3">';
-            sentences.forEach(sentence => {
-                const trimmed = sentence.trim();
-                if (trimmed.length > 0) {
-                    formatted += `<li class="mb-1">${trimmed}.</li>`;
-                }
-            });
-            formatted += '</ul>';
-            
-            return formatted;
             }
 
         // Render functions
@@ -937,7 +976,7 @@
                                     <span class="badge bg-info text-white me-2">${dispute.issue_type}</span>
                                     ${dispute.ai_reading ? `
                                         <span class="badge bg-warning text-dark">
-                                            <img src="/assets/img/image.png" alt="AI" style="width: 12px; height: 12px;" class="me-1" />AI: ${dispute.ai_reading}
+                                            <img src="/assets/img/image.png" alt="AI" style="width: 12px; height: 12px;" class="me-1" />${dispute.ai_reading}
                                         </span>
                                     ` : ''}
                                 </div>
@@ -1056,7 +1095,7 @@
                                                 ${selectedDispute.ai_reading ? `
                                                     <div class="col-12">
                                                         <div class="text-center p-2 bg-info bg-opacity-10 rounded-3 border border-info">
-                                                            <small class="text-info fw-semibold">AI Reading Analysis</small>
+                                                            <small class="text-info fw-semibold">AI Meter Analysis</small>
                                                             <p class="mb-0 text-info fw-bold fs-9">${selectedDispute.ai_reading}</p>
                                                         </div>
                                                     </div>
@@ -1109,7 +1148,7 @@
                                                 <img src="/assets/img/image.png" alt="AI" style="width: 20px; height: 20px;" class="me-2" />
                                                 <h6 class="mb-0 text-info">AI Analysis</h6>
                                                 ${selectedDispute.ai_confidence ? `
-                                                    <span class="badge bg-info text-white ms-auto">${selectedDispute.ai_confidence}</span>
+                                                    <span class="badge bg-info text-white ms-auto">Confidence: ${selectedDispute.ai_confidence}</span>
                                                 ` : ''}
                                             </div>
                                         </div>
@@ -1193,8 +1232,8 @@
             if (bills.length > 0) {
                 bills.forEach(bill => {
                     const statusBadge = createBillStatusBadge(bill.status);
-                    const amountDue = bill.amount_due ? `₹${bill.amount_due.toFixed(2)}` : '—';
-                    const amountPaid = bill.amount_paid ? `₹${bill.amount_paid.toFixed(2)}` : '—';
+                    const amountDue = bill.amount_due ? `$${bill.amount_due.toFixed(2)}` : '—';
+                    const amountPaid = bill.amount_paid ? `$${bill.amount_paid.toFixed(2)}` : '—';
                     
                     // Format units based on category
                     let unitsConsumed = '—';

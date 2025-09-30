@@ -18,8 +18,8 @@
     <div class="col-12 col-xl-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="text-body-highlight mb-1">Automation health</h5>
-                <p class="text-body-secondary mb-2">AI predictions processed in the last 24h.</p>
+                <h5 class="text-body-highlight mb-1">Last 30 days stats</h5>
+                <p class="text-body-secondary mb-2">Meter reading accuracy: Actual vs AI</p>
                 <div class="d-flex align-items-end justify-content-between">
                     <div class="display-6 fw-semibold text-success mb-0" id="automation-health">0%</div>
                     <span class="badge badge-phoenix badge-phoenix-success fs-10"><span class="badge-label">Stable</span><span class="ms-1" data-feather="trending-up" style="height:12.8px;width:12.8px;"></span></span>
@@ -67,7 +67,8 @@
                         <th class="align-middle" scope="col" style="width:12%;">Evidence Photo</th>
                         <th class="align-middle" scope="col" style="width:25%;">Description</th>
                         <th class="sort align-middle" scope="col" data-sort="status" style="width:10%;">Status</th>
-                        <th class="sort align-middle" scope="col" data-sort="prediction" style="width:12%;">AI Prediction</th>
+                        <th class="sort align-middle" scope="col" data-sort="prediction" style="width:12%;">Meter Reading</th>
+                        <th class="sort align-middle" scope="col" data-sort="prediction" style="width:12%;">Meter Reading(AI)</th>
                         <th class="align-middle text-end pe-3" scope="col" style="width:8%;">Actions</th>
                     </tr>
                 </thead>
@@ -175,7 +176,6 @@
 
         async function loadAllData() {
             try {
-                await loadDashboardSummary();
                 await loadUserList();
             } catch (error) {
                 console.error("Error loading data:", error);
@@ -183,27 +183,37 @@
             }
         }
 
-        // Function to load dashboard summary data
-        async function loadDashboardSummary() {
-            $.ajax({
-                url: "http://127.0.0.1:8000/api/admin/dashboard-summary",
-                type: "GET",
-                contentType: "application/json",
-                dataType: "json",
-                success: function (data) {
-                    if (data && data.response) {
-                        gdashboardSummary = data.response;
-                        populateDashboardSummary(gdashboardSummary);
-                    } else {
-                        console.error("Unexpected API response:", data);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error("AJAX Error:", status, error);
-                    // Fallback to sample data for demo
-                    loadSampleDashboardData();
-                }
+        // Function to calculate dashboard summary from real data
+        function calculateDashboardSummary(disputes) {
+            if (!disputes || disputes.length === 0) {
+                return {
+                    pendingValidations: 0,
+                    automationHealth: { percentage: 0 }
+                };
+            }
+
+            // Count pending validations (open and pending statuses)
+            const pendingValidations = disputes.filter(dispute => 
+                dispute.status && (dispute.status.toLowerCase() === 'open' || dispute.status.toLowerCase() === 'pending')
+            ).length;
+
+            // Calculate automation health based on AI confidence
+            const disputesWithAI = disputes.filter(dispute => dispute.ai_confidence);
+            let totalConfidence = 0;
+            let aiProcessedCount = 0;
+
+            disputesWithAI.forEach(dispute => {
+                const confidence = parseInt(dispute.ai_confidence) || 0;
+                totalConfidence += confidence;
+                aiProcessedCount++;
             });
+
+            const averageConfidence = aiProcessedCount > 0 ? Math.round(totalConfidence / aiProcessedCount) : 0;
+
+            return {
+                pendingValidations: pendingValidations,
+                automationHealth: { percentage: averageConfidence }
+            };
         }
 
         // Function to load disputes list data
@@ -216,6 +226,11 @@
                 success: function (data) {
                     if (data && data.disputes) {
                         guserData = data.disputes;
+                        
+                        // Calculate and populate dashboard summary from real data
+                        const summary = calculateDashboardSummary(guserData);
+                        populateDashboardSummary(summary);
+                        
                         applyFiltersAndPagination();
                     } else {
                         console.error("Unexpected API response:", data);
@@ -257,6 +272,10 @@
                     dispute.issue_type.toLowerCase().includes(query)
                 );
             }
+
+            // Recalculate dashboard summary based on filtered data
+            const summary = calculateDashboardSummary(filteredData);
+            populateDashboardSummary(summary);
 
             // Calculate pagination
             totalItems = filteredData.length;
@@ -368,7 +387,18 @@
                     </td>
                     <td class="text-body-secondary">${dispute.description}</td>
                     <td class="status">${createStatusBadge(dispute.status)}</td>
-                    <td class="prediction fw-semibold text-body-highlight">${dispute.ai_reading || '—'}</td>
+                    <td class="prediction fw-semibold text-body-highlight">${dispute.meter_reading || '—'}</td>
+                    <td class="prediction fw-semibold text-body-highlight">
+                        ${
+                            (dispute.ai_reading == null || dispute.ai_reading === '')
+                                ? '—'
+                                : (
+                                    dispute.meter_reading == dispute.ai_reading
+                                        ? `<span class="badge badge-phoenix badge-phoenix-success">${dispute.ai_reading}</span>`
+                                        : `<span class="badge badge-phoenix badge-phoenix-danger">${dispute.ai_reading}</span>`
+                                )
+                        }
+                    </td>
                         <td class="text-end pe-3">
                         <a class="btn btn-primary btn-sm" href="/admin/user_details?customerid=${dispute.customer_id}&disputeid=${dispute.dispute_id}">View</a>
                      </td>
@@ -586,11 +616,8 @@
 
         // Fallback functions for demo data when API is not available
         function loadSampleDashboardData() {
-            const sampleSummary = {
-                pendingValidations: 2,
-                automationHealth: { percentage: 95 }
-            };
-            populateDashboardSummary(sampleSummary);
+            // This function is no longer needed as we calculate from real data
+            // But keeping it for backward compatibility
         }
 
         function loadSampleUserData() {

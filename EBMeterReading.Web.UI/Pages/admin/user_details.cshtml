@@ -1095,7 +1095,7 @@
                                                 ${selectedDispute.ai_reading ? `
                                                     <div class="col-12">
                                                         <div class="text-center p-2 bg-info bg-opacity-10 rounded-3 border border-info">
-                                                            <small class="text-info fw-semibold">AI Meter Analysis</small>
+                                                            <small class="text-info fw-bold fs-8">AI Meter Analysis</small>
                                                             <p class="mb-0 text-info fw-bold fs-9">${selectedDispute.ai_reading}</p>
                                                         </div>
                                                     </div>
@@ -1232,8 +1232,8 @@
             if (bills.length > 0) {
                 bills.forEach(bill => {
                     const statusBadge = createBillStatusBadge(bill.status);
-                    const amountDue = bill.amount_due ? `$${bill.amount_due.toFixed(2)}` : '—';
-                    const amountPaid = bill.amount_paid ? `$${bill.amount_paid.toFixed(2)}` : '—';
+                    const amountDue = bill.amount_due ? `₹${bill.amount_due.toFixed(2)}` : '—';
+                    const amountPaid = bill.amount_paid ? `₹${bill.amount_paid.toFixed(2)}` : '—';
                     
                     // Format units based on category
                     let unitsConsumed = '—';
